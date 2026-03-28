@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ─────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return field is string && field.size() >= minLen && field.size() <= maxLen;
+    }
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Users can only read/write their own document
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidString(request.resource.data.email, 5, 254)
+        && isValidString(request.resource.data.displayName, 1, 100)
+        && request.resource.data.role in ['House Owner', 'Contractor'];
+      allow update: if isOwner(userId)
+        && (!request.resource.data.keys().hasAny(['uid', 'email']))
+            || request.resource.data.uid == userId;
+      allow delete: if false; // Prevent accidental deletion
+
+      // ─── Projects ──────────────────────────────────────────────────────────
+
+      match /projects/{projectId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidString(request.resource.data.name, 3, 200)
+          && request.resource.data.userId == userId;
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+
+        // ─── Images ────────────────────────────────────────────────────────
+
+        match /images/{imageId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId)
+            && request.resource.data.userId == userId
+            && request.resource.data.projectId == projectId
+            && request.resource.data.status in ['pending', 'complete', 'error']
+            && isValidString(request.resource.data.storagePath, 5, 500);
+          // Cloud Functions use Admin SDK which bypasses rules entirely
+          allow update: if isOwner(userId);
+          allow delete: if isOwner(userId);
+        }
+
+        // ─── Analysis Results ───────────────────────────────────────────────
+
+        match /analysisResults/{resultId} {
+          allow read: if isOwner(userId);
+          // Only Cloud Functions create analysis results
+          allow create: if false;
+          allow update: if false;
+          allow delete: if isOwner(userId);
+        }
+
+        // ─── Checklist ──────────────────────────────────────────────────────
+
+        match /checklist/{stage} {
+          allow read: if isOwner(userId);
+          allow create, update: if isOwner(userId)
+            && request.resource.data.projectId == projectId;
+          allow delete: if isOwner(userId);
+        }
+      }
+    }
+
+    // ─── App Content (read-only for authenticated users) ────────────────────
+
+    match /appContent/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+  }
+}
