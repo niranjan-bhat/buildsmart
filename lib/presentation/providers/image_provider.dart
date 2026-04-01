@@ -72,6 +72,9 @@ class UploadState {
   final bool isAnalyzing;
   final AnalysisResultModel? analysisResult;
   final bool hasNonConstructionError;
+  final int totalImages;
+  final int completedUploads;
+  final List<ImageModel> uploadedImages;
 
   const UploadState({
     this.isUploading = false,
@@ -81,6 +84,9 @@ class UploadState {
     this.isAnalyzing = false,
     this.analysisResult,
     this.hasNonConstructionError = false,
+    this.totalImages = 1,
+    this.completedUploads = 0,
+    this.uploadedImages = const [],
   });
 
   UploadState copyWith({
@@ -91,6 +97,9 @@ class UploadState {
     bool? isAnalyzing,
     AnalysisResultModel? analysisResult,
     bool? hasNonConstructionError,
+    int? totalImages,
+    int? completedUploads,
+    List<ImageModel>? uploadedImages,
     bool clearError = false,
   }) {
     return UploadState(
@@ -102,10 +111,14 @@ class UploadState {
       analysisResult: analysisResult ?? this.analysisResult,
       hasNonConstructionError:
           hasNonConstructionError ?? this.hasNonConstructionError,
+      totalImages: totalImages ?? this.totalImages,
+      completedUploads: completedUploads ?? this.completedUploads,
+      uploadedImages: uploadedImages ?? this.uploadedImages,
     );
   }
 
   bool get isDone => !isUploading && !isAnalyzing;
+  bool get isMultiUpload => totalImages > 1;
 }
 
 class UploadNotifier extends StateNotifier<UploadState> {
@@ -117,6 +130,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
   Future<ImageModel?> uploadImage({
     required String projectId,
     required File imageFile,
+    String language = 'English',
   }) async {
     state = const UploadState(isUploading: true, uploadProgress: 0);
     try {
@@ -124,6 +138,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
         userId: _userId,
         projectId: projectId,
         imageFile: imageFile,
+        language: language,
         onProgress: (progress) {
           state = state.copyWith(uploadProgress: progress);
         },
@@ -142,6 +157,63 @@ class UploadNotifier extends StateNotifier<UploadState> {
       );
       return null;
     }
+  }
+
+  Future<List<ImageModel>> uploadImages({
+    required String projectId,
+    required List<File> imageFiles,
+    String language = 'English',
+  }) async {
+    final total = imageFiles.length;
+    state = UploadState(isUploading: true, uploadProgress: 0, totalImages: total);
+
+    final uploaded = <ImageModel>[];
+    final errors = <String>[];
+    // Track per-file progress contribution
+    final progresses = List<double>.filled(total, 0.0);
+
+    await Future.wait(
+      imageFiles.asMap().entries.map((entry) async {
+        try {
+          final model = await _repository.uploadAndAnalyze(
+            userId: _userId,
+            projectId: projectId,
+            imageFile: entry.value,
+            language: language,
+            onProgress: (p) {
+              progresses[entry.key] = p;
+              final avg =
+                  progresses.reduce((a, b) => a + b) / total;
+              state = state.copyWith(uploadProgress: avg);
+            },
+          );
+          uploaded.add(model);
+          state = state.copyWith(
+            completedUploads: state.completedUploads + 1,
+          );
+        } catch (e) {
+          errors.add(e.toString().replaceFirst('Exception: ', ''));
+        }
+      }),
+    );
+
+    if (uploaded.isEmpty) {
+      state = state.copyWith(
+        isUploading: false,
+        error: errors.isNotEmpty ? errors.first : 'Upload failed',
+      );
+      return [];
+    }
+
+    state = state.copyWith(
+      isUploading: false,
+      uploadProgress: 1.0,
+      uploadedImages: uploaded,
+      // Only enter "analysing" state for single-image flow
+      isAnalyzing: total == 1,
+      uploadedImage: total == 1 ? uploaded.first : null,
+    );
+    return uploaded;
   }
 
   void onAnalysisComplete(ImageModel image, AnalysisResultModel? result) {

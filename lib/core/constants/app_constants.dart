@@ -27,6 +27,7 @@ class AppConstants {
   static const String onboardingKey = 'onboarding_done';
   static const String userRoleKey = 'user_role';
   static const String notificationsKey = 'notifications_enabled';
+  static const String languageKey = 'language_code';
 
   // Image Analysis Status
   static const String statusPending = 'pending';

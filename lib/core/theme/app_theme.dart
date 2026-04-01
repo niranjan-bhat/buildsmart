@@ -4,7 +4,7 @@ class AppTheme {
   AppTheme._();
 
   // Accent
-  static const Color primaryColor = Color(0xFF4F46E5);
+  static const Color primaryColor = Color(0xFFEA580C); // construction orange
 
   // Light theme neutrals
   static const Color backgroundLight = Color(0xFFF8FAFC);
@@ -170,7 +170,7 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: surfaceLight,
-      selectedColor: const Color(0xFFEEF2FF),
+      selectedColor: const Color(0xFFFFF7ED), // orange-50
       disabledColor: const Color(0xFFF3F4F6),
       deleteIconColor: textSecondaryLight,
       labelStyle: const TextStyle(
@@ -214,7 +214,7 @@ class AppTheme {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surfaceLight,
-      indicatorColor: const Color(0xFFEEF2FF),
+      indicatorColor: const Color(0xFFFFF7ED), // orange-50
       labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
         (states) => TextStyle(
           fontFamily: 'Inter',
@@ -468,7 +468,7 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFFA5B4FC),
+        foregroundColor: const Color(0xFFFB923C), // orange-400 for dark bg
         textStyle: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 14,
@@ -524,7 +524,7 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: surfaceDark,
-      selectedColor: const Color(0xFF1E1B4B),
+      selectedColor: const Color(0xFF431407), // orange-950
       disabledColor: const Color(0xFF1A1A1A),
       deleteIconColor: textSecondaryDark,
       labelStyle: const TextStyle(
@@ -568,7 +568,7 @@ class AppTheme {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surfaceDark,
-      indicatorColor: const Color(0xFF1E1B4B),
+      indicatorColor: const Color(0xFF431407), // orange-950
       labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
         (states) => TextStyle(
           fontFamily: 'Inter',

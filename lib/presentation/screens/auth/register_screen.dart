@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -85,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return LoadingOverlay(
       isLoading: authState.isLoading,
-      message: 'Creating account...',
+      message: context.l10n.creatingAccount,
       child: Scaffold(
         appBar: AppBar(
           leading: BackButton(onPressed: () => context.go(AppRoutes.login)),
@@ -113,18 +114,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text('Create account', style: theme.textTheme.headlineMedium),
+                  Text(context.l10n.createAccountTitle, style: theme.textTheme.headlineMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Start tracking your construction projects',
+                    context.l10n.createAccountSubtitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 28),
 
                   // Role selection
-                  Text('I am a', style: theme.textTheme.titleSmall),
+                  Text(context.l10n.iAm, style: theme.textTheme.titleSmall),
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -156,13 +157,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _nameCtrl,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Full name',
-                      prefixIcon: Icon(Icons.person_outline),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.fullName,
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     validator: (v) {
                       if (v == null || v.trim().length < 2) {
-                        return 'Enter your full name';
+                        return context.l10n.fullNameValidation;
                       }
                       return null;
                     },
@@ -174,15 +175,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Email address',
-                      prefixIcon: Icon(Icons.email_outlined),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.emailAddress,
+                      prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Email is required';
+                      if (v == null || v.trim().isEmpty) return context.l10n.emailRequired;
                       if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
                           .hasMatch(v.trim())) {
-                        return 'Enter a valid email';
+                        return context.l10n.emailInvalid;
                       }
                       return null;
                     },
@@ -195,7 +196,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: context.l10n.password,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword
@@ -207,7 +208,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     validator: (v) {
                       if (v == null || v.length < 6) {
-                        return 'Password must be at least 6 characters';
+                        return context.l10n.passwordValidation;
                       }
                       return null;
                     },
@@ -221,7 +222,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _register(),
                     decoration: InputDecoration(
-                      labelText: 'Confirm password',
+                      labelText: context.l10n.confirmPassword,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(_obscureConfirm
@@ -233,7 +234,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     validator: (v) {
                       if (v != _passwordCtrl.text) {
-                        return 'Passwords do not match';
+                        return context.l10n.passwordsMismatch;
                       }
                       return null;
                     },
@@ -245,7 +246,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _register,
-                      child: const Text('Create Account'),
+                      child: Text(context.l10n.createAccount),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -257,9 +258,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'or',
+                          context.l10n.or,
                           style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -274,7 +275,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _signInGoogle,
                       icon: const Icon(Icons.g_mobiledata, size: 24),
-                      label: const Text('Continue with Google'),
+                      label: Text(context.l10n.continueWithGoogle),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -285,15 +286,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Already have an account? ',
+                          context.l10n.alreadyHaveAccount,
                           style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         GestureDetector(
                           onTap: () => context.go(AppRoutes.login),
                           child: Text(
-                            'Sign in',
+                            context.l10n.signInLink,
                             style: TextStyle(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,

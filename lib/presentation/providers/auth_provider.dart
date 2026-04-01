@@ -138,6 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? displayName,
     String? photoUrl,
     String? role,
+    String? preferredLanguage,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -145,6 +146,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         displayName: displayName,
         photoUrl: photoUrl,
         role: role,
+        preferredLanguage: preferredLanguage,
       );
       state = state.copyWith(isLoading: false);
       return true;

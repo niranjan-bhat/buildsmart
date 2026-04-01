@@ -12,6 +12,7 @@ class ImageModel {
   final String? analysisResultId;
   final int fileSizeBytes;
   final String? errorMessage;
+  final String language;
 
   const ImageModel({
     required this.id,
@@ -25,6 +26,7 @@ class ImageModel {
     this.analysisResultId,
     this.fileSizeBytes = 0,
     this.errorMessage,
+    this.language = 'English',
   });
 
   factory ImageModel.fromFirestore(DocumentSnapshot doc) {
@@ -41,6 +43,7 @@ class ImageModel {
       analysisResultId: data['analysisResultId'] as String?,
       fileSizeBytes: data['fileSizeBytes'] as int? ?? 0,
       errorMessage: data['errorMessage'] as String?,
+      language: data['language'] as String? ?? 'English',
     );
   }
 
@@ -61,6 +64,7 @@ class ImageModel {
       analysisResultId: map['analysisResultId'] as String?,
       fileSizeBytes: map['fileSizeBytes'] as int? ?? 0,
       errorMessage: map['errorMessage'] as String?,
+      language: map['language'] as String? ?? 'English',
     );
   }
 
@@ -76,6 +80,7 @@ class ImageModel {
       'analysisResultId': analysisResultId,
       'fileSizeBytes': fileSizeBytes,
       'errorMessage': errorMessage,
+      'language': language,
     };
   }
 
@@ -95,6 +100,7 @@ class ImageModel {
     String? analysisResultId,
     int? fileSizeBytes,
     String? errorMessage,
+    String? language,
   }) {
     return ImageModel(
       id: id ?? this.id,
@@ -108,6 +114,7 @@ class ImageModel {
       analysisResultId: analysisResultId ?? this.analysisResultId,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
       errorMessage: errorMessage ?? this.errorMessage,
+      language: language ?? this.language,
     );
   }
 }

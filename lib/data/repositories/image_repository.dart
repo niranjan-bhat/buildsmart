@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../models/image_model.dart';
 import '../models/analysis_result_model.dart';
+import '../models/defect_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../../core/constants/app_constants.dart';
@@ -21,6 +22,7 @@ class ImageRepository {
     required String userId,
     required String projectId,
     required File imageFile,
+    String language = 'English',
     void Function(double progress)? onProgress,
   }) async {
     // Upload to Storage
@@ -41,9 +43,16 @@ class ImageRepository {
       status: AppConstants.statusPending,
       uploadedAt: DateTime.now(),
       fileSizeBytes: uploadResult.fileSizeBytes,
+      language: language,
     );
 
     final imageId = await _firestoreService.createImageRecord(imageModel);
+
+    // Keep project thumbnail up to date with the latest uploaded image
+    await _firestoreService.updateProject(userId, projectId, {
+      'thumbnailUrl': uploadResult.downloadUrl,
+    });
+
     return imageModel.copyWith(id: imageId);
   }
 
@@ -73,6 +82,20 @@ class ImageRepository {
     String projectId,
   ) {
     return _firestoreService.analysisResultsStream(userId, projectId);
+  }
+
+  Future<void> updateDefectRectification(
+    String userId,
+    String projectId,
+    String resultId,
+    List<DefectModel> defects,
+  ) async {
+    await _firestoreService.updateAnalysisDefects(
+      userId,
+      projectId,
+      resultId,
+      defects.map((d) => d.toMap()).toList(),
+    );
   }
 
   Future<AnalysisResultModel?> getAnalysisResult(

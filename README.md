@@ -10,7 +10,7 @@ AI-powered construction site analysis app for Android. Takes photos of construct
 
 ## Current State (as of March 2026)
 
-The project scaffold is complete. All screens, data models, repositories, providers, and the Cloud Function are in place. Firebase is configured and connected. The app is not yet released — still in development toward M3/M4.
+M3 (Analysis UI) and M4 (Checklist Module) are complete. The app is functional end-to-end — users can create projects, capture images, receive AI analysis, manage defects, and work through stage checklists.
 
 **What exists:**
 - All 11 screens (splash, onboarding, auth, projects, camera, analysis, checklist, settings)
@@ -18,11 +18,15 @@ The project scaffold is complete. All screens, data models, repositories, provid
 - Cloud Function (`analyzeConstructionImage`) — Firestore trigger → Gemini 1.5 Flash → writes result back
 - Firestore + Storage security rules
 - FCM service stub
-- Material 3 theme with Inter font
+- Material 3 theme with Inter font, light + dark mode
+- Hive local cache for checklist (Firestore-synced, offline-capable)
+- Multi-image upload — up to 5 images analysed in parallel, each with its own result
+- Defect rectification — mark individual defects as resolved; persisted to Firestore
+- Shimmer placeholders on project cards and image grid while content loads
+- Reverse geocoding on location detect — shows city/state/country instead of raw coordinates
 
 **What is NOT done yet:**
 - `lib/firebase_options.dart` is gitignored — must regenerate locally (see setup)
-- Hive local cache for checklist not wired up
 - FCM push notifications not fully integrated
 - No tests written yet (target ≥ 70% coverage)
 - CI/CD (GitHub Actions + Fastlane) not configured
@@ -180,7 +184,7 @@ appContent/bestPractices              read-only, admin-managed
 | `google_sign_in` | Google OAuth |
 | `image_picker` + `flutter_image_compress` | Camera/gallery + compression |
 | `hive` + `hive_flutter` | Local cache for checklist |
-| `geolocator` | GPS coordinates on image capture |
+| `geolocator` + `geocoding` | GPS coordinates + reverse geocoding to readable address |
 | `crypto` | Image hashing (dedup before Gemini call) |
 | `pdf` + `printing` | PDF export of analysis results |
 

@@ -213,6 +213,22 @@ class FirestoreService {
     return AnalysisResultModel.fromFirestore(doc);
   }
 
+  Future<void> updateAnalysisDefects(
+    String userId,
+    String projectId,
+    String resultId,
+    List<Map<String, dynamic>> defects,
+  ) async {
+    await _db
+        .collection(AppConstants.usersCollection)
+        .doc(userId)
+        .collection(AppConstants.projectsCollection)
+        .doc(projectId)
+        .collection('analysisResults')
+        .doc(resultId)
+        .update({'defects': defects});
+  }
+
   Stream<List<AnalysisResultModel>> analysisResultsStream(
       String userId, String projectId) {
     return _db

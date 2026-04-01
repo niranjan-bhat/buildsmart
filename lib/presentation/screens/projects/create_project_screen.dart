@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../providers/project_provider.dart';
 import '../../widgets/loading_overlay.dart';
 
@@ -48,7 +50,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showSnack('Location services are disabled.');
+        _showSnack(context.l10n.locationServicesDisabled);
         return;
       }
 
@@ -56,22 +58,40 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showSnack('Location permission denied.');
+          _showSnack(context.l10n.locationPermissionDenied);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showSnack('Location permission permanently denied.');
+        _showSnack(context.l10n.locationPermissionPermanentlyDenied);
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.medium);
-      _locationCtrl.text =
-          '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+      try {
+        final placemarks = await placemarkFromCoordinates(
+            position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          final parts = [p.locality, p.administrativeArea, p.country]
+              .where((s) => s != null && s!.isNotEmpty)
+              .map((s) => s!)
+              .toList();
+          _locationCtrl.text = parts.isNotEmpty
+              ? parts.join(', ')
+              : '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+        } else {
+          _locationCtrl.text =
+              '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+        }
+      } catch (_) {
+        _locationCtrl.text =
+            '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+      }
     } catch (e) {
-      _showSnack('Failed to get location: $e');
+      _showSnack(context.l10n.failedGetLocation(e.toString()));
     } finally {
       if (mounted) setState(() => _fetchingLocation = false);
     }
@@ -102,10 +122,10 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
 
     return LoadingOverlay(
       isLoading: projectState.isLoading,
-      message: 'Creating project...',
+      message: context.l10n.creatingProject,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('New Project'),
+          title: Text(context.l10n.newProject),
           leading: const BackButton(),
         ),
         body: SingleChildScrollView(
@@ -116,14 +136,14 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Project Details',
+                  context.l10n.projectDetails,
                   style: theme.textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Fill in the details to create a new construction project.',
+                  context.l10n.projectDetailsSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -132,14 +152,14 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                   controller: _nameCtrl,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Project Name *',
-                    hintText: 'e.g. My New House, Office Block A',
-                    prefixIcon: Icon(Icons.business_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.projectNameRequired,
+                    hintText: context.l10n.projectNameHint,
+                    prefixIcon: const Icon(Icons.business_outlined),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().length < 3) {
-                      return 'Enter a project name (min 3 characters)';
+                      return context.l10n.projectNameValidation;
                     }
                     return null;
                   },
@@ -150,8 +170,8 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                   controller: _locationCtrl,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Location',
-                    hintText: 'e.g. Nairobi, Kenya or GPS coordinates',
+                    labelText: context.l10n.locationLabel,
+                    hintText: context.l10n.locationHint,
                     prefixIcon: const Icon(Icons.location_on_outlined),
                     suffixIcon: _fetchingLocation
                         ? const Padding(
@@ -164,7 +184,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                           )
                         : IconButton(
                             icon: const Icon(Icons.my_location),
-                            tooltip: 'Detect location',
+                            tooltip: context.l10n.detectLocation,
                             onPressed: _detectLocation,
                           ),
                   ),
@@ -176,9 +196,9 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                   maxLines: 4,
                   textInputAction: TextInputAction.done,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Brief description of the project...',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.description,
+                    hintText: context.l10n.descriptionHint,
                     prefixIcon: Padding(
                       padding: EdgeInsets.only(bottom: 60),
                       child: Icon(Icons.description_outlined),
@@ -192,7 +212,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                   child: ElevatedButton.icon(
                     onPressed: projectState.isLoading ? null : _create,
                     icon: const Icon(Icons.check),
-                    label: const Text('Create Project'),
+                    label: Text(context.l10n.createProject),
                   ),
                 ),
               ],

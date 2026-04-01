@@ -8,8 +8,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../../data/models/image_model.dart';
 import '../../../data/models/analysis_result_model.dart';
+import '../../../data/models/defect_model.dart';
 import '../../../data/repositories/image_repository.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/image_provider.dart';
 import '../../widgets/stage_badge.dart';
@@ -97,6 +99,40 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
     });
   }
 
+  Future<void> _toggleRectified(int defectIndex, bool isRectified) async {
+    if (_analysisResult == null) return;
+    final userId = ref.read(authStateProvider).value?.uid ?? '';
+    final updatedDefects = _analysisResult!.defects.asMap().entries.map((e) {
+      if (e.key != defectIndex) return e.value;
+      return e.value.copyWith(
+        isRectified: isRectified,
+        rectifiedAt: isRectified ? DateTime.now() : null,
+        clearRectifiedAt: !isRectified,
+      );
+    }).toList();
+
+    // Optimistic update
+    setState(() {
+      _analysisResult = _analysisResult!.copyWith(defects: updatedDefects);
+    });
+
+    try {
+      await ref.read(imageRepositoryProvider).updateDefectRectification(
+            userId,
+            widget.projectId,
+            _analysisResult!.id,
+            updatedDefects,
+          );
+    } catch (_) {
+      // Revert on failure
+      setState(() {
+        _analysisResult = _analysisResult!.copyWith(
+          defects: _analysisResult!.defects,
+        );
+      });
+    }
+  }
+
   Future<void> _exportPdf() async {
     if (_analysisResult == null || _imageModel == null) return;
     final result = _analysisResult!;
@@ -165,7 +201,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
 
     if (_isLoading && _analysisResult == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Analysis Result')),
+        appBar: AppBar(title: Text(context.l10n.analysisResult)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -174,15 +210,15 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
               const SizedBox(height: 20),
               Text(
                 _imageModel?.isPending ?? true
-                    ? 'AI is analysing your image...'
+                    ? context.l10n.aiAnalysing
                     : 'Loading results...',
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'This usually takes 10–20 seconds',
+                context.l10n.usuallyTakes,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -196,7 +232,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
           _error!.contains(AppConstants.nonConstructionImageError) ||
               _error!.toLowerCase().contains('non_construction');
       return Scaffold(
-        appBar: AppBar(title: const Text('Analysis Result')),
+        appBar: AppBar(title: Text(context.l10n.analysisResult)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -213,25 +249,25 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                 const SizedBox(height: 16),
                 Text(
                   isNonConstruction
-                      ? 'Not a Construction Image'
-                      : 'Analysis Failed',
+                      ? context.l10n.notConstructionImageTitle
+                      : context.l10n.analysisFailed,
                   style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   isNonConstruction
-                      ? 'The uploaded image does not appear to be a construction site. Please try again with a relevant photo.'
+                      ? context.l10n.notConstructionImageMsg
                       : _error!,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Try Again'),
+                  label: Text(context.l10n.tryAgain),
                 ),
               ],
             ),
@@ -250,11 +286,11 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            title: const Text('Analysis Result'),
+            title: Text(context.l10n.analysisResult),
             actions: [
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf_outlined),
-                tooltip: 'Export PDF',
+                tooltip: context.l10n.exportPdf,
                 onPressed: _exportPdf,
               ),
             ],
@@ -279,10 +315,10 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: assessmentColor.withOpacity(0.1),
+                      color: assessmentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border:
-                          Border.all(color: assessmentColor.withOpacity(0.3)),
+                          Border.all(color: assessmentColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -310,10 +346,10 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                               ),
                               Text(
                                 result.isPass
-                                    ? 'No critical issues found'
-                                    : '${result.defects.length} issue${result.defects.length == 1 ? '' : 's'} detected',
+                                    ? context.l10n.noCriticalIssues
+                                    : context.l10n.issuesDetected(result.defects.length),
                                 style: TextStyle(
-                                  color: assessmentColor.withOpacity(0.8),
+                                  color: assessmentColor.withValues(alpha: 0.8),
                                   fontSize: 13,
                                 ),
                               ),
@@ -324,7 +360,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                           DateFormat('dd MMM\nHH:mm').format(result.analyzedAt),
                           style: TextStyle(
                             fontSize: 11,
-                            color: assessmentColor.withOpacity(0.7),
+                            color: assessmentColor.withValues(alpha: 0.7),
                           ),
                           textAlign: TextAlign.right,
                         ),
@@ -348,7 +384,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                     Row(
                       children: [
                         Text(
-                          'Defects Found',
+                          context.l10n.defectsFound,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -370,6 +406,9 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                             ),
                           ),
                         ),
+                        const Spacer(),
+                        // Rectification progress
+                        _RectificationProgress(defects: result.defects),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -377,6 +416,8 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                           (entry) => DefectCard(
                             defect: entry.value,
                             index: entry.key + 1,
+                            onRectifiedToggle: (val) =>
+                                _toggleRectified(entry.key, val),
                           ),
                         ),
                     const SizedBox(height: 24),
@@ -394,7 +435,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'No defects detected! This stage looks good.',
+                              context.l10n.noDefectsDetected,
                               style: TextStyle(color: Colors.green.shade700),
                             ),
                           ),
@@ -407,7 +448,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                   // Best practices
                   if (result.bestPractices.isNotEmpty) ...[
                     Text(
-                      'Best Practices',
+                      context.l10n.bestPractices,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -416,10 +457,10 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.05),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.15),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -460,7 +501,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _exportPdf,
                       icon: const Icon(Icons.picture_as_pdf_outlined),
-                      label: const Text('Export as PDF'),
+                      label: Text(context.l10n.exportAsPdf),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -468,7 +509,7 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () => context.pop(),
-                      child: const Text('Back to Project'),
+                      child: Text(context.l10n.backToProject),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -490,5 +531,49 @@ class _AnalysisResultScreenState extends ConsumerState<AnalysisResultScreen> {
       default:
         return Colors.orange.shade700;
     }
+  }
+}
+
+class _RectificationProgress extends StatelessWidget {
+  final List<DefectModel> defects;
+
+  const _RectificationProgress({required this.defects});
+
+  @override
+  Widget build(BuildContext context) {
+    final rectified = defects.where((d) => d.isRectified).length;
+    final total = defects.length;
+    if (total == 0) return const SizedBox.shrink();
+
+    final allDone = rectified == total;
+    final color = allDone ? Colors.green.shade600 : Colors.orange.shade700;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            allDone ? Icons.check_circle : Icons.pending_outlined,
+            size: 13,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            context.l10n.fixedCount(rectified, total),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

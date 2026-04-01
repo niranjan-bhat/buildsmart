@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/models/analysis_result_model.dart';
 import '../../../core/constants/construction_stages.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../providers/image_provider.dart';
 import '../../widgets/analysis_card.dart';
 
@@ -44,7 +45,7 @@ class _AnalysisHistoryScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analysis History'),
+        title: Text(context.l10n.analysisHistory),
         actions: [
           if (_selectedStageFilter != null || _selectedAssessmentFilter != null)
             TextButton(
@@ -52,7 +53,7 @@ class _AnalysisHistoryScreenState
                 _selectedStageFilter = null;
                 _selectedAssessmentFilter = null;
               }),
-              child: const Text('Clear'),
+              child: Text(context.l10n.clear),
             ),
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -72,13 +73,13 @@ class _AnalysisHistoryScreenState
                   Icon(Icons.analytics_outlined,
                       size: 64, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
-                  Text('No analyses yet',
+                  Text(context.l10n.noAnalysesYet,
                       style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Upload images to start tracking your project',
+                    context.l10n.uploadToTrack,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -93,14 +94,14 @@ class _AnalysisHistoryScreenState
                 children: [
                   Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
-                  const Text('No results match the filters'),
+                  Text(context.l10n.noResultsMatchFilters),
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => setState(() {
                       _selectedStageFilter = null;
                       _selectedAssessmentFilter = null;
                     }),
-                    child: const Text('Clear Filters'),
+                    child: Text(context.l10n.clearFilters),
                   ),
                 ],
               ),
@@ -148,9 +149,9 @@ class _AnalysisHistoryScreenState
                 child: Row(
                   children: [
                     Text(
-                      '${filtered.length} result${filtered.length == 1 ? '' : 's'}',
+                      context.l10n.analysisCount(filtered.length),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -217,7 +218,7 @@ class _AnalysisHistoryScreenState
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Text('Filters',
+                  Text(context.l10n.filters,
                       style: Theme.of(context).textTheme.titleLarge),
                   const Spacer(),
                   TextButton(
@@ -228,7 +229,7 @@ class _AnalysisHistoryScreenState
                       });
                       Navigator.pop(ctx);
                     },
-                    child: const Text('Clear All'),
+                    child: Text(context.l10n.clearAll),
                   ),
                 ],
               ),
@@ -238,7 +239,7 @@ class _AnalysisHistoryScreenState
                 controller: scroll,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  Text('Construction Stage',
+                  Text(context.l10n.constructionStage,
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Wrap(
@@ -260,7 +261,7 @@ class _AnalysisHistoryScreenState
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
-                  Text('Assessment',
+                  Text(context.l10n.assessment,
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Wrap(

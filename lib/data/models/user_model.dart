@@ -9,6 +9,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? fcmToken;
+  final String preferredLanguage;
 
   const UserModel({
     required this.uid,
@@ -19,6 +20,7 @@ class UserModel {
     required this.createdAt,
     this.updatedAt,
     this.fcmToken,
+    this.preferredLanguage = 'English',
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +34,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       fcmToken: data['fcmToken'] as String?,
+      preferredLanguage: data['preferredLanguage'] as String? ?? 'English',
     );
   }
 
@@ -49,6 +52,7 @@ class UserModel {
           ? (map['updatedAt'] as Timestamp).toDate()
           : DateTime.tryParse(map['updatedAt'] as String? ?? ''),
       fcmToken: map['fcmToken'] as String?,
+      preferredLanguage: map['preferredLanguage'] as String? ?? 'English',
     );
   }
 
@@ -62,6 +66,7 @@ class UserModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'fcmToken': fcmToken,
+      'preferredLanguage': preferredLanguage,
     };
   }
 
@@ -74,6 +79,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? fcmToken,
+    String? preferredLanguage,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -84,6 +90,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       fcmToken: fcmToken ?? this.fcmToken,
+      preferredLanguage: preferredLanguage ?? this.preferredLanguage,
     );
   }
 

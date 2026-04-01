@@ -5,11 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../data/models/image_model.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../data/models/analysis_result_model.dart';
-import '../../../data/repositories/image_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/image_provider.dart';
+
+const int _maxImages = 5;
 
 class CameraPickerScreen extends ConsumerStatefulWidget {
   final String projectId;
@@ -23,8 +24,7 @@ class CameraPickerScreen extends ConsumerStatefulWidget {
 
 class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
   final ImagePicker _picker = ImagePicker();
-  File? _selectedImage;
-  String? _uploadedImageId;
+  final List<File> _selectedImages = [];
 
   @override
   void initState() {
@@ -35,87 +35,120 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
   }
 
   Future<bool> _requestPermission(ImageSource source) async {
-    final Permission permission;
-    if (source == ImageSource.camera) {
-      permission = Permission.camera;
-    } else {
-      // READ_MEDIA_IMAGES on API 33+, READ_EXTERNAL_STORAGE on older
-      permission = Permission.photos;
-    }
-
+    final permission =
+        source == ImageSource.camera ? Permission.camera : Permission.photos;
     final status = await permission.request();
     if (status.isGranted) return true;
 
     if (mounted) {
-      if (status.isPermanentlyDenied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              source == ImageSource.camera
-                  ? 'Camera permission permanently denied. Enable it in Settings.'
-                  : 'Photo library permission permanently denied. Enable it in Settings.',
-            ),
-            action: SnackBarAction(
-              label: 'Settings',
-              onPressed: openAppSettings,
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            status.isPermanentlyDenied
+                ? (source == ImageSource.camera
+                    ? context.l10n.cameraPermissionPermanentlyDenied
+                    : context.l10n.photoLibraryPermissionPermanentlyDenied)
+                : (source == ImageSource.camera
+                    ? context.l10n.cameraPermissionRequired
+                    : context.l10n.photoLibraryPermissionRequired),
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              source == ImageSource.camera
-                  ? 'Camera permission is required to take a photo.'
-                  : 'Photo library permission is required to select an image.',
-            ),
-          ),
-        );
-      }
+          action: status.isPermanentlyDenied
+              ? SnackBarAction(label: context.l10n.openSettings, onPressed: openAppSettings)
+              : null,
+        ),
+      );
     }
     return false;
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final granted = await _requestPermission(source);
+  Future<void> _pickFromCamera() async {
+    if (_selectedImages.length >= _maxImages) return;
+    final granted = await _requestPermission(ImageSource.camera);
     if (!granted) return;
 
     try {
       final picked = await _picker.pickImage(
-        source: source,
+        source: ImageSource.camera,
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 90,
       );
       if (picked != null) {
-        setState(() => _selectedImage = File(picked.path));
+        setState(() => _selectedImages.add(File(picked.path)));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
+          SnackBar(content: Text(context.l10n.failedCaptureImage(e.toString()))),
         );
       }
     }
   }
 
-  Future<void> _upload() async {
-    if (_selectedImage == null) return;
+  Future<void> _pickFromGallery() async {
+    final remaining = _maxImages - _selectedImages.length;
+    if (remaining <= 0) return;
+    final granted = await _requestPermission(ImageSource.gallery);
+    if (!granted) return;
 
-    final imageModel = await ref
-        .read(uploadNotifierProvider.notifier)
-        .uploadImage(
-          projectId: widget.projectId,
-          imageFile: _selectedImage!,
+    try {
+      final picked = await _picker.pickMultiImage(
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 90,
+      );
+      if (picked.isNotEmpty) {
+        setState(() {
+          final toAdd = picked.take(remaining).map((x) => File(x.path));
+          _selectedImages.addAll(toAdd);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.failedPickImages(e.toString()))),
         );
-
-    if (imageModel != null) {
-      setState(() => _uploadedImageId = imageModel.id);
-      _listenForResult(imageModel.id);
+      }
     }
   }
 
-  void _listenForResult(String imageId) {
+  void _removeImage(int index) {
+    setState(() => _selectedImages.removeAt(index));
+  }
+
+  Future<void> _upload() async {
+    if (_selectedImages.isEmpty) return;
+
+    final notifier = ref.read(uploadNotifierProvider.notifier);
+    final language = ref.read(currentUserModelProvider).value?.preferredLanguage ?? 'English';
+
+    if (_selectedImages.length == 1) {
+      // Single image — existing flow: listen for result and navigate to it
+      final imageModel = await notifier.uploadImage(
+        projectId: widget.projectId,
+        imageFile: _selectedImages.first,
+        language: language,
+      );
+      if (imageModel != null) {
+        _listenForSingleResult(imageModel.id);
+      }
+    } else {
+      // Multi-image — upload all in parallel, then go to project detail
+      final uploaded = await notifier.uploadImages(
+        projectId: widget.projectId,
+        imageFiles: _selectedImages,
+        language: language,
+      );
+      if (uploaded.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.imagesUploading(uploaded.length))),
+        );
+        context.pop(); // Back to project detail; grid shows real-time status
+      }
+    }
+  }
+
+  void _listenForSingleResult(String imageId) {
     final userId = ref.read(authStateProvider).value?.uid ?? '';
     final repo = ref.read(imageRepositoryProvider);
 
@@ -154,9 +187,12 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
   Widget build(BuildContext context) {
     final uploadState = ref.watch(uploadNotifierProvider);
     final theme = Theme.of(context);
+    final isBusy = uploadState.isUploading || uploadState.isAnalyzing;
+    final canAddMore =
+        _selectedImages.length < _maxImages && !isBusy;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analyse Image')),
+      appBar: AppBar(title: Text(context.l10n.analyseImages)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -166,10 +202,10 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.06),
+                color: theme.colorScheme.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.15)),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.15)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +215,7 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Take or upload a clear photo of the construction site. Our AI will identify the stage and detect any defects.',
+                      context.l10n.imageSelectionHint(_maxImages),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.primary,
                         height: 1.5,
@@ -191,66 +227,24 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Image preview
-            GestureDetector(
-              onTap: uploadState.isUploading || uploadState.isAnalyzing
-                  ? null
-                  : () => _pickImage(ImageSource.gallery),
-              child: Container(
-                width: double.infinity,
-                height: 260,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _selectedImage != null
-                        ? theme.colorScheme.primary
-                        : Colors.grey.shade300,
-                    width: _selectedImage != null ? 2 : 1,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: _selectedImage != null
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.file(_selectedImage!, fit: BoxFit.cover),
-                            if (uploadState.isUploading ||
-                                uploadState.isAnalyzing)
-                              Container(
-                                color: Colors.black54,
-                                child: Center(
-                                  child: _ProgressOverlay(
-                                      uploadState: uploadState),
-                                ),
-                              ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 56,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Tap to select an image',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
+            // Image selection area
+            if (_selectedImages.isEmpty)
+              _EmptyPickerArea(
+                onCamera: _pickFromCamera,
+                onGallery: _pickFromGallery,
+                isBusy: isBusy,
+              )
+            else
+              _SelectedImagesGrid(
+                images: _selectedImages,
+                isBusy: isBusy,
+                uploadState: uploadState,
+                onRemove: _removeImage,
               ),
-            ),
+
             const SizedBox(height: 20),
 
-            // Error message
+            // Error
             if (uploadState.error != null)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -266,9 +260,7 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        uploadState.hasNonConstructionError
-                            ? 'This doesn\'t appear to be a construction site image. Please try a different photo.'
-                            : uploadState.error!,
+                        uploadState.error!,
                         style: TextStyle(color: Colors.red.shade700),
                       ),
                     ),
@@ -276,59 +268,65 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
                 ),
               ),
 
-            // Source buttons
-            if (!uploadState.isUploading && !uploadState.isAnalyzing) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickImage(ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt_outlined),
-                      label: const Text('Camera'),
+            // Action buttons
+            if (!isBusy) ...[
+              if (_selectedImages.isNotEmpty && canAddMore) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFromCamera,
+                        icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                        label: Text(context.l10n.camera),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickImage(ImageSource.gallery),
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Gallery'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFromGallery,
+                        icon: const Icon(Icons.photo_library_outlined, size: 18),
+                        label: Text(
+                          context.l10n.galleryLeft(_maxImages - _selectedImages.length),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _selectedImage != null ? _upload : null,
-                  icon: const Icon(Icons.analytics_outlined),
-                  label: const Text('Analyse with AI'),
+                  ],
                 ),
-              ),
-            ] else ...[
+                const SizedBox(height: 12),
+              ],
+              if (_selectedImages.isNotEmpty)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _upload,
+                    icon: const Icon(Icons.analytics_outlined),
+                    label: Text(
+                      _selectedImages.length == 1
+                          ? context.l10n.analyseWithAI
+                          : context.l10n.analyseWithAIMultiple(_selectedImages.length),
+                    ),
+                  ),
+                ),
+            ] else if (uploadState.isAnalyzing) ...[
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  uploadState.isUploading
-                      ? 'Uploading image...'
-                      : 'AI is analysing your image...',
+                  context.l10n.aiAnalysing,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              if (uploadState.isAnalyzing) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'This usually takes 10-20 seconds',
+              const SizedBox(height: 4),
+              Center(
+                child: Text(
+                  context.l10n.usuallyTakes,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ],
+              ),
             ],
           ],
         ),
@@ -337,57 +335,246 @@ class _CameraPickerScreenState extends ConsumerState<CameraPickerScreen> {
   }
 }
 
-class _ProgressOverlay extends StatelessWidget {
-  final UploadState uploadState;
+class _EmptyPickerArea extends StatelessWidget {
+  final VoidCallback onCamera;
+  final VoidCallback onGallery;
+  final bool isBusy;
 
-  const _ProgressOverlay({required this.uploadState});
+  const _EmptyPickerArea({
+    required this.onCamera,
+    required this.onGallery,
+    required this.isBusy,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (uploadState.isUploading) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: isBusy ? null : onGallery,
+          child: Container(
+            width: double.infinity,
+            height: 220,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add_photo_alternate_outlined,
+                    size: 56, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                Text(context.l10n.tapToSelectImages,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.grey.shade500)),
+                const SizedBox(height: 4),
+                Text(context.l10n.upToMaxPhotos(_maxImages),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey.shade400)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isBusy ? null : onCamera,
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: Text(context.l10n.camera),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isBusy ? null : onGallery,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: Text(context.l10n.gallery),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedImagesGrid extends StatelessWidget {
+  final List<File> images;
+  final bool isBusy;
+  final UploadState uploadState;
+  final void Function(int) onRemove;
+
+  const _SelectedImagesGrid({
+    required this.images,
+    required this.isBusy,
+    required this.uploadState,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              context.l10n.imagesSelected(images.length),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const Spacer(),
+            if (isBusy && uploadState.isMultiUpload)
+              Text(
+                context.l10n.uploadedCount(uploadState.completedUploads, uploadState.totalImages),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: images.length,
+          itemBuilder: (ctx, i) {
+            return _ImageThumb(
+              file: images[i],
+              index: i,
+              isBusy: isBusy,
+              isUploading: isBusy && i >= uploadState.completedUploads,
+              onRemove: () => onRemove(i),
+              uploadProgress: isBusy && uploadState.totalImages == 1
+                  ? uploadState.uploadProgress
+                  : null,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageThumb extends StatelessWidget {
+  final File file;
+  final int index;
+  final bool isBusy;
+  final bool isUploading;
+  final VoidCallback onRemove;
+  final double? uploadProgress;
+
+  const _ImageThumb({
+    required this.file,
+    required this.index,
+    required this.isBusy,
+    required this.isUploading,
+    required this.onRemove,
+    this.uploadProgress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          CircularPercentIndicator(
-            radius: 40,
-            lineWidth: 5,
-            percent: uploadState.uploadProgress,
-            progressColor: Colors.white,
-            backgroundColor: Colors.white24,
-            center: Text(
-              '${(uploadState.uploadProgress * 100).toInt()}%',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+          Image.file(file, fit: BoxFit.cover),
+
+          // Uploading overlay
+          if (isBusy && isUploading)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: uploadProgress != null
+                    ? CircularPercentIndicator(
+                        radius: 22,
+                        lineWidth: 3,
+                        percent: uploadProgress!,
+                        progressColor: Colors.white,
+                        backgroundColor: Colors.white24,
+                        center: Text(
+                          '${(uploadProgress! * 100).toInt()}%',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5),
+                      ),
+              ),
+            ),
+
+          // Done overlay
+          if (isBusy && !isUploading)
+            Container(
+              color: Colors.black26,
+              child: const Center(
+                child: Icon(Icons.check_circle, color: Colors.white, size: 28),
+              ),
+            ),
+
+          // Remove button (only when not busy)
+          if (!isBusy)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      const Icon(Icons.close, color: Colors.white, size: 14),
+                ),
+              ),
+            ),
+
+          // Image number badge
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Uploading...',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-          ),
         ],
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(
-          width: 40,
-          height: 40,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 3,
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'AI Analysing...',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-      ],
+      ),
     );
   }
 }

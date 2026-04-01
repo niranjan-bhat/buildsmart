@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../core/router/app_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/project_provider.dart';
@@ -21,13 +22,13 @@ class ProjectsHomeScreen extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('BuildSmart'),
+            Text(context.l10n.appName),
             userAsync.when(
               data: (user) => user != null
                   ? Text(
                       user.displayName,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.appBarTheme.foregroundColor?.withOpacity(0.6),
+                        color: theme.appBarTheme.foregroundColor?.withValues(alpha: 0.6),
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -39,7 +40,7 @@ class ProjectsHomeScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
+            tooltip: context.l10n.settings,
             onPressed: () => context.push(AppRoutes.settings),
           ),
         ],
@@ -77,11 +78,11 @@ class ProjectsHomeScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 12),
-                Text('Failed to load projects', style: theme.textTheme.titleMedium),
+                Text(context.l10n.failedLoadProjects, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => ref.invalidate(projectsStreamProvider),
-                  child: const Text('Retry'),
+                  child: Text(context.l10n.retry),
                 ),
               ],
             ),
@@ -91,7 +92,7 @@ class ProjectsHomeScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.createProject),
         icon: const Icon(Icons.add),
-        label: const Text('New Project'),
+        label: Text(context.l10n.newProject),
       ),
     );
   }
@@ -126,8 +127,8 @@ class ProjectsHomeScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete Project',
-                  style: TextStyle(color: Colors.red)),
+              title: Text(context.l10n.deleteProject,
+                  style: const TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, ref, projectId, projectName);
@@ -149,13 +150,12 @@ class ProjectsHomeScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Project?'),
-        content: Text(
-            'Are you sure you want to delete "$projectName"? This cannot be undone.'),
+        title: Text(context.l10n.deleteProjectTitle),
+        content: Text(context.l10n.deleteProjectConfirm(projectName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -165,7 +165,7 @@ class ProjectsHomeScreen extends ConsumerWidget {
                   .deleteProject(projectId);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -191,27 +191,27 @@ class _EmptyProjectsView extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.08),
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.construction,
                 size: 60,
-                color: theme.colorScheme.primary.withOpacity(0.4),
+                color: theme.colorScheme.primary.withValues(alpha: 0.4),
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No projects yet',
+              context.l10n.noProjectsTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Create your first construction project to start tracking progress and analyzing images with AI.',
+              context.l10n.noProjectsDescription,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 height: 1.6,
               ),
               textAlign: TextAlign.center,
@@ -220,7 +220,7 @@ class _EmptyProjectsView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onCreateTap,
               icon: const Icon(Icons.add),
-              label: const Text('Create Project'),
+              label: Text(context.l10n.createProject),
             ),
           ],
         ),
@@ -232,18 +232,63 @@ class _EmptyProjectsView extends StatelessWidget {
 class _ProjectsShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final base = Colors.grey.shade200;
+    final highlight = Colors.grey.shade100;
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade200,
-      highlightColor: Colors.grey.shade100,
+      baseColor: base,
+      highlightColor: highlight,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: 4,
         itemBuilder: (ctx, i) => Container(
           margin: const EdgeInsets.only(bottom: 16),
-          height: 200,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: base,
             borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thumbnail placeholder
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Title placeholder
+              Container(
+                height: 14,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Subtitle placeholder
+              Container(
+                height: 11,
+                width: 160,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Stage badge placeholder
+              Container(
+                height: 28,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ],
           ),
         ),
       ),

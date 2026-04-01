@@ -60,7 +60,9 @@ service cloud.firestore {
           allow read: if isOwner(userId);
           // Only Cloud Functions create analysis results
           allow create: if false;
-          allow update: if false;
+          // Users may only update the defects array (to mark items as rectified)
+          allow update: if isOwner(userId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['defects']);
           allow delete: if isOwner(userId);
         }
 

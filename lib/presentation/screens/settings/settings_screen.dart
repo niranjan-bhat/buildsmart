@@ -6,13 +6,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../data/services/storage_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/project_provider.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../../main.dart';
+
+// Maps locale code → (display name, Gemini language name, native label)
+const _supportedLanguages = [
+  ('en', 'English',  'English'),
+  ('hi', 'Hindi',    'हिन्दी'),
+  ('kn', 'Kannada',  'ಕನ್ನಡ'),
+];
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -32,21 +39,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _changeAvatar() async {
+    final l10n = context.l10n;
     final status = await Permission.photos.request();
     if (!status.isGranted) {
       if (!mounted) return;
       if (status.isPermanentlyDenied) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-                'Photo library permission permanently denied. Enable it in Settings.'),
-            action: SnackBarAction(label: 'Settings', onPressed: openAppSettings),
+            content: Text(l10n.photoLibraryDenied),
+            action: SnackBarAction(
+                label: l10n.openSettings, onPressed: openAppSettings),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Photo library permission is required.')),
+          SnackBar(content: Text(l10n.photoLibraryRequired)),
         );
       }
       return;
@@ -75,13 +82,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .updateProfile(photoUrl: downloadUrl);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile photo updated.')),
+          SnackBar(content: Text(context.l10n.profilePhotoUpdated)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update photo: $e')),
+          SnackBar(content: Text(context.l10n.failedUpdatePhoto(e.toString()))),
         );
       }
     }
@@ -97,37 +104,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _sendPasswordReset(String email) async {
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .sendPasswordResetEmail(email);
+      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Password reset email sent to $email')),
+          SnackBar(
+              content: Text(context.l10n.passwordResetSentTo(email))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send reset email: $e')),
+          SnackBar(
+              content:
+                  Text(context.l10n.failedSendResetEmail(e.toString()))),
         );
       }
     }
   }
 
   Future<void> _signOut() async {
+    final l10n = context.l10n;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(l10n.signOutTitle),
+        content: Text(l10n.signOutConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sign Out'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),
@@ -161,11 +170,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {});
   }
 
+  /// Changes app UI locale + Gemini output language atomically.
+  Future<void> _setLanguage(String code, String geminiName) async {
+    await Hive.box(AppConstants.settingsBox)
+        .put(AppConstants.languageKey, code);
+    ref.read(localProvider.notifier).state = Locale(code);
+    await ref
+        .read(authNotifierProvider.notifier)
+        .updateProfile(preferredLanguage: geminiName);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final userAsync = ref.watch(currentUserModelProvider);
     final authState = ref.watch(authNotifierProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final currentLocale = ref.watch(localProvider);
     final theme = Theme.of(context);
 
     final currentThemeKey = themeMode == ThemeMode.dark
@@ -177,11 +198,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final notificationsEnabled = Hive.box(AppConstants.settingsBox)
         .get(AppConstants.notificationsKey, defaultValue: true) as bool;
 
+    // Find the display tuple for the current locale
+    final currentLang = _supportedLanguages.firstWhere(
+      (t) => t.$1 == currentLocale.languageCode,
+      orElse: () => _supportedLanguages.first,
+    );
+
     return LoadingOverlay(
       isLoading: authState.isLoading,
-      message: 'Saving...',
+      message: l10n.saving,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
+        appBar: AppBar(title: Text(l10n.settingsTitle)),
         body: userAsync.when(
           loading: () => Center(
             child: Column(
@@ -192,19 +219,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 OutlinedButton.icon(
                   onPressed: _signOut,
                   icon: const Icon(Icons.logout, color: Colors.red),
-                  label: const Text('Sign Out',
-                      style: TextStyle(color: Colors.red)),
+                  label: Text(l10n.signOut,
+                      style: const TextStyle(color: Colors.red)),
                   style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red)),
                 ),
               ],
             ),
           ),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => Center(child: Text('${l10n.error}: $e')),
           data: (user) {
             if (user == null) {
-              // Firestore document missing but Firebase Auth may still have a session.
-              // Show a recovery screen so the user can sign out.
               final firebaseUser = ref.read(authStateProvider).value;
               return Center(
                 child: Padding(
@@ -217,21 +242,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(height: 16),
                       Text(
                         firebaseUser != null
-                            ? 'Setting up your account…'
-                            : 'Not logged in',
-                        style: Theme.of(context).textTheme.titleMedium,
+                            ? l10n.settingUpAccount
+                            : l10n.notLoggedIn,
+                        style: theme.textTheme.titleMedium,
                         textAlign: TextAlign.center,
                       ),
                       if (firebaseUser != null) ...[
                         const SizedBox(height: 8),
                         Text(
                           firebaseUser.email ?? '',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.5),
-                              ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.5),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         const CircularProgressIndicator(),
@@ -241,8 +264,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       OutlinedButton.icon(
                         onPressed: _signOut,
                         icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text('Sign Out',
-                            style: TextStyle(color: Colors.red)),
+                        label: Text(l10n.signOut,
+                            style: const TextStyle(color: Colors.red)),
                         style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Colors.red)),
                       ),
@@ -251,6 +274,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               );
             }
+
             return ListView(
               children: [
                 // ── Profile Header ────────────────────────────────────
@@ -265,7 +289,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             CircleAvatar(
                               radius: 48,
                               backgroundColor:
-                                  AppTheme.primaryColor.withOpacity(0.1),
+                                  AppTheme.primaryColor.withValues(alpha: 0.1),
                               backgroundImage: user.photoUrl != null
                                   ? NetworkImage(user.photoUrl!)
                                   : null,
@@ -307,8 +331,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               child: TextField(
                                 controller: _nameCtrl,
                                 autofocus: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Display Name',
+                                decoration: InputDecoration(
+                                  labelText: l10n.displayName,
                                   isDense: true,
                                 ),
                                 onSubmitted: (_) => _saveName(),
@@ -319,13 +343,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               icon: const Icon(Icons.check,
                                   color: Colors.green),
                               onPressed: _saveName,
-                              tooltip: 'Save',
+                              tooltip: l10n.save,
                             ),
                             IconButton(
                               icon: const Icon(Icons.close),
                               onPressed: () =>
                                   setState(() => _isEditingName = false),
-                              tooltip: 'Cancel',
+                              tooltip: l10n.cancel,
                             ),
                           ],
                         )
@@ -352,7 +376,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Text(
                         user.email,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -360,7 +385,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -377,64 +402,75 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
 
                 // ── Account ───────────────────────────────────────────
-                _SectionHeader(label: 'Account'),
+                _SectionHeader(label: l10n.account),
                 ListTile(
                   leading: const Icon(Icons.badge_outlined),
-                  title: const Text('Role'),
+                  title: Text(l10n.role),
                   subtitle: Text(user.role),
                   trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () => _showRolePicker(context, user.role),
                 ),
                 ListTile(
                   leading: const Icon(Icons.lock_reset_outlined),
-                  title: const Text('Change Password'),
-                  subtitle: const Text('Send a reset link to your email'),
+                  title: Text(l10n.changePassword),
+                  subtitle: Text(l10n.sendResetLink),
                   trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () => _sendPasswordReset(user.email),
                 ),
 
+                // ── Language ──────────────────────────────────────────
+                _SectionHeader(label: l10n.language),
+                ListTile(
+                  leading: const Icon(Icons.translate_outlined),
+                  title: Text(l10n.appLanguage),
+                  subtitle: Text(
+                      '${currentLang.$2} · ${currentLang.$3}'),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () => _showLanguagePicker(context, currentLocale.languageCode),
+                ),
+
                 // ── Appearance ────────────────────────────────────────
-                _SectionHeader(label: 'Appearance'),
+                _SectionHeader(label: l10n.appearance),
                 _ThemeOption(
-                  label: 'System Default',
+                  label: l10n.systemDefault,
                   icon: Icons.brightness_auto_outlined,
                   selected: currentThemeKey == 'system',
                   onTap: () => _setTheme('system'),
                 ),
                 _ThemeOption(
-                  label: 'Light Mode',
+                  label: l10n.lightMode,
                   icon: Icons.wb_sunny_outlined,
                   selected: currentThemeKey == 'light',
                   onTap: () => _setTheme('light'),
                 ),
                 _ThemeOption(
-                  label: 'Dark Mode',
+                  label: l10n.darkMode,
                   icon: Icons.nightlight_outlined,
                   selected: currentThemeKey == 'dark',
                   onTap: () => _setTheme('dark'),
                 ),
 
                 // ── Notifications ─────────────────────────────────────
-                _SectionHeader(label: 'Notifications'),
+                _SectionHeader(label: l10n.notifications),
                 SwitchListTile(
                   secondary: const Icon(Icons.notifications_outlined),
-                  title: const Text('Analysis Results'),
-                  subtitle: const Text(
-                      'Get notified when AI analysis is complete'),
+                  title: Text(l10n.analysisResults),
+                  subtitle: Text(l10n.notifiedWhenComplete),
                   value: notificationsEnabled,
                   onChanged: _setNotifications,
                   activeThumbColor: AppTheme.primaryColor,
                 ),
 
                 // ── About ─────────────────────────────────────────────
-                _SectionHeader(label: 'About'),
+                _SectionHeader(label: l10n.about),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: const Text('Version'),
+                  title: Text(l10n.version),
                   trailing: Text(
                     AppConstants.appVersion,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -450,8 +486,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _signOut,
                       icon: const Icon(Icons.logout, color: Colors.red),
-                      label: const Text('Sign Out',
-                          style: TextStyle(color: Colors.red)),
+                      label: Text(l10n.signOut,
+                          style: const TextStyle(color: Colors.red)),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.red),
                       ),
@@ -467,7 +503,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showLanguagePicker(BuildContext context, String currentCode) {
+    final l10n = context.l10n;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.languagePickerTitle,
+                style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              l10n.languagePickerSubtitle,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(ctx)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
+                  ),
+            ),
+            const SizedBox(height: 16),
+            ...(_supportedLanguages.map((lang) {
+              final isSelected = lang.$1 == currentCode;
+              return ListTile(
+                leading: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: isSelected
+                      ? AppTheme.primaryColor.withValues(alpha: 0.12)
+                      : Colors.grey.withValues(alpha: 0.08),
+                  child: Text(
+                    lang.$3[0],
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                title: Text(lang.$2),
+                subtitle: Text(lang.$3),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle,
+                        color: AppTheme.primaryColor)
+                    : null,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _setLanguage(lang.$1, lang.$2);
+                },
+              );
+            })),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showRolePicker(BuildContext context, String currentRole) {
+    final l10n = context.l10n;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -479,7 +579,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select Role',
+            Text(l10n.selectRole,
                 style: Theme.of(ctx).textTheme.titleLarge),
             const SizedBox(height: 16),
             ...[AppConstants.roleHouseOwner, AppConstants.roleContractor]

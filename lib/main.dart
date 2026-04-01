@@ -7,8 +7,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'data/services/fcm_service.dart';
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
 import 'presentation/providers/auth_provider.dart';
 
 void main() async {
@@ -77,6 +77,8 @@ class _BuildSmartAppState extends ConsumerState<BuildSmartApp> {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(_themeModeProvider);
 
+    final locale = ref.watch(localProvider);
+
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
@@ -84,6 +86,9 @@ class _BuildSmartAppState extends ConsumerState<BuildSmartApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }
@@ -103,3 +108,12 @@ final _themeModeProvider = StateProvider<ThemeMode>((ref) {
 
 // Exported so SettingsScreen can toggle it
 final themeModeProvider = _themeModeProvider;
+
+final _localProvider = StateProvider<Locale>((ref) {
+  final code = Hive.box(AppConstants.settingsBox)
+      .get(AppConstants.languageKey, defaultValue: 'en') as String;
+  return Locale(code);
+});
+
+// Exported so SettingsScreen can switch locale
+final localProvider = _localProvider;

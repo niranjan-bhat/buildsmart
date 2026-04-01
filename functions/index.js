@@ -124,6 +124,12 @@ exports.analyzeConstructionImage = onDocumentCreated(
         },
       });
 
+      const language = imageData.language || "English";
+      const languageInstruction =
+        language !== "English"
+          ? `\n\nIMPORTANT: Respond in ${language}. All text values in the JSON (defect titles, descriptions, rectification steps, best practices) must be written in ${language}. Keep JSON keys in English.`
+          : "";
+
       const result = await model.generateContent([
         {
           inlineData: {
@@ -131,7 +137,7 @@ exports.analyzeConstructionImage = onDocumentCreated(
             mimeType,
           },
         },
-        CONSTRUCTION_STAGES_PROMPT,
+        CONSTRUCTION_STAGES_PROMPT + languageInstruction,
       ]);
 
       const responseText = result?.response?.text?.()?.trim();

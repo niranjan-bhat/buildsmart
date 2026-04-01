@@ -130,6 +130,7 @@ class AuthRepository {
     String? displayName,
     String? photoUrl,
     String? role,
+    String? preferredLanguage,
   }) async {
     final userId = _authService.currentUserId;
     if (userId == null) return;
@@ -143,9 +144,8 @@ class AuthRepository {
       updates['photoUrl'] = photoUrl;
       await _authService.updatePhotoURL(photoUrl);
     }
-    if (role != null) {
-      updates['role'] = role;
-    }
+    if (role != null) updates['role'] = role;
+    if (preferredLanguage != null) updates['preferredLanguage'] = preferredLanguage;
 
     if (updates.isNotEmpty) {
       await _firestoreService.updateUser(userId, updates);

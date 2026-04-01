@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../../../core/constants/construction_stages.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../data/models/checklist_model.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/project_provider.dart';
@@ -76,7 +77,7 @@ class _ChecklistScreenState extends ConsumerState<ChecklistScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checklist'),
+        title: Text(context.l10n.checklistTitle),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -95,14 +96,14 @@ class _ChecklistScreenState extends ConsumerState<ChecklistScreen>
           // Stage header
           Container(
             padding: const EdgeInsets.all(16),
-            color: stage.color.withOpacity(0.08),
+            color: stage.color.withValues(alpha: 0.08),
             child: Row(
               children: [
                 Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: stage.color.withOpacity(0.15),
+                    color: stage.color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(stage.icon, color: stage.color, size: 24),
@@ -122,7 +123,7 @@ class _ChecklistScreenState extends ConsumerState<ChecklistScreen>
                       Text(
                         stage.description,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -134,7 +135,7 @@ class _ChecklistScreenState extends ConsumerState<ChecklistScreen>
                     lineWidth: 4,
                     percent: checklist.completionRate.clamp(0.0, 1.0),
                     progressColor: stage.color,
-                    backgroundColor: stage.color.withOpacity(0.15),
+                    backgroundColor: stage.color.withValues(alpha: 0.15),
                     center: Text(
                       '${checklist.completedCount}/${checklist.totalCount}',
                       style: TextStyle(
@@ -170,7 +171,7 @@ class _ChecklistScreenState extends ConsumerState<ChecklistScreen>
 
   Widget _buildChecklistItems(ChecklistStageModel checklist, dynamic stage) {
     if (checklist.items.isEmpty) {
-      return const Center(child: Text('No checklist items for this stage.'));
+      return Center(child: Text(context.l10n.noChecklistItems));
     }
 
     return ListView.builder(
@@ -215,12 +216,12 @@ class _ChecklistItemTile extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: item.isCompleted
-              ? stageColor.withOpacity(0.06)
+              ? stageColor.withValues(alpha: 0.06)
               : theme.cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: item.isCompleted
-                ? stageColor.withOpacity(0.25)
+                ? stageColor.withValues(alpha: 0.25)
                 : theme.dividerTheme.color ?? Colors.grey.shade200,
           ),
         ),
@@ -257,13 +258,13 @@ class _ChecklistItemTile extends StatelessWidget {
                   ? TextDecoration.lineThrough
                   : null,
               color: item.isCompleted
-                  ? theme.colorScheme.onSurface.withOpacity(0.4)
+                  ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                   : null,
             ),
           ),
           trailing: item.isCompleted
               ? Icon(Icons.verified_outlined,
-                  size: 16, color: stageColor.withOpacity(0.6))
+                  size: 16, color: stageColor.withValues(alpha: 0.6))
               : null,
           onTap: () => onToggle(!item.isCompleted),
         ),

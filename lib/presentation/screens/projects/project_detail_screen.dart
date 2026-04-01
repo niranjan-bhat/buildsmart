@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/construction_stages.dart';
+import '../../../core/extensions/l10n_extension.dart';
 import '../../../data/models/image_model.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/project_provider.dart';
 import '../../providers/image_provider.dart';
 import '../../widgets/stage_badge.dart';
@@ -47,7 +48,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
         if (project == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('Project not found')),
+            body: Center(child: Text(context.l10n.projectNotFound)),
           );
         }
 
@@ -69,18 +70,18 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: stageColor.withValues(alpha:0.15),
+                          color: stageColor.withValues(alpha: 0.15),
                           child: Icon(
                             stage?.icon ?? Icons.construction,
                             size: 80,
-                            color: stageColor.withValues(alpha:0.3),
+                            color: stageColor.withValues(alpha: 0.3),
                           ),
                         ),
                 ),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.camera_alt_outlined),
-                    tooltip: 'Analyse Image',
+                    tooltip: context.l10n.analyseImage,
                     onPressed: () =>
                         context.push('/projects/${widget.projectId}/camera'),
                   ),
@@ -115,7 +116,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                         Icons.location_on_outlined,
                                         size: 14,
                                         color: theme.colorScheme.onSurface
-                                            .withValues(alpha:0.5),
+                                            .withValues(alpha: 0.5),
                                       ),
                                       const SizedBox(width: 4),
                                       Expanded(
@@ -124,7 +125,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
                                             color: theme.colorScheme.onSurface
-                                                .withValues(alpha:0.5),
+                                                .withValues(alpha: 0.5),
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -137,7 +138,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                   'Created ${DateFormat('dd MMM yyyy').format(project.createdAt)}',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface
-                                        .withValues(alpha:0.4),
+                                        .withValues(alpha: 0.4),
                                   ),
                                 ),
                               ],
@@ -145,7 +146,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                           ),
                           StageProgressRing(
                             currentStage: project.currentStage,
-                            size: 80,
+                            size: 85,
                           ),
                         ],
                       ),
@@ -176,7 +177,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                           onPressed: () => context
                               .push('/projects/${widget.projectId}/history'),
                           icon: const Icon(Icons.history, size: 18),
-                          label: const Text('History'),
+                          label: Text(context.l10n.history),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -185,7 +186,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                           onPressed: () => context
                               .push('/projects/${widget.projectId}/checklist'),
                           icon: const Icon(Icons.checklist, size: 18),
-                          label: const Text('Checklist'),
+                          label: Text(context.l10n.checklist),
                         ),
                       ),
                     ],
@@ -194,10 +195,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                 // Tab bar
                 TabBar(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Recent'),
-                    Tab(text: 'Stages'),
-                    Tab(text: 'Info'),
+                  tabs: [
+                    Tab(text: context.l10n.recentTab),
+                    Tab(text: context.l10n.stagesTab),
+                    Tab(text: context.l10n.infoTab),
                   ],
                 ),
                 // Tab views
@@ -221,13 +222,13 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
           floatingActionButton: FloatingActionButton(
             onPressed: () =>
                 context.push('/projects/${widget.projectId}/camera'),
-            tooltip: 'Analyse Image',
+            tooltip: context.l10n.analyseImage,
             child: const Icon(Icons.add_a_photo_outlined),
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: FullScreenLoader(message: 'Loading project...'),
+      loading: () => Scaffold(
+        body: FullScreenLoader(message: context.l10n.loadingProject),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
@@ -265,17 +266,17 @@ class _StageSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isActive
-                    ? stage.color.withValues(alpha:0.15)
+                    ? stage.color.withValues(alpha: 0.15)
                     : isDone
-                        ? Colors.green.withValues(alpha:0.08)
-                        : Colors.grey.withValues(alpha:0.08),
+                        ? Colors.green.withValues(alpha: 0.08)
+                        : Colors.grey.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isActive
                       ? stage.color
                       : isDone
-                          ? Colors.green.withValues(alpha:0.3)
-                          : Colors.grey.withValues(alpha:0.2),
+                          ? Colors.green.withValues(alpha: 0.3)
+                          : Colors.grey.withValues(alpha: 0.2),
                   width: isActive ? 1.5 : 1,
                 ),
               ),
@@ -331,12 +332,12 @@ class _RecentImagesTab extends ConsumerWidget {
                 Icon(Icons.photo_camera_outlined,
                     size: 48, color: Colors.grey.shade300),
                 const SizedBox(height: 12),
-                Text('No images yet', style: theme.textTheme.bodyMedium),
+                Text(context.l10n.noImagesTitle, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Tap the camera button to analyse a photo',
+                  context.l10n.noImagesDescription,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha:0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -370,12 +371,92 @@ class _ImageTile extends ConsumerWidget {
 
   const _ImageTile({required this.image, required this.projectId});
 
+  void _showError(BuildContext context) {
+    final reason = image.errorMessage ?? 'Unknown error';
+    final isNonConstruction = reason.contains('NON_CONSTRUCTION');
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.error_outline,
+                      color: Colors.red.shade700, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  context.l10n.analysisFailed,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade100),
+              ),
+              child: Text(
+                isNonConstruction
+                    ? context.l10n.nonConstructionError
+                    : reason.replaceAll('NON_CONSTRUCTION_IMAGE', ''),
+                style: TextStyle(color: Colors.red.shade800, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              context.l10n.deleteImageHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreen(BuildContext context) {
+    if (image.downloadUrl == null) return;
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => _FullScreenImageViewer(url: image.downloadUrl!),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: image.isComplete
-          ? () => context.push('/projects/$projectId/analysis/${image.id}')
-          : null,
+      onTap: () {
+        if (image.isComplete) {
+          context.push('/projects/$projectId/analysis/${image.id}');
+        } else if (image.isError) {
+          _showError(context);
+        }
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Stack(
@@ -385,9 +466,20 @@ class _ImageTile extends ConsumerWidget {
               CachedNetworkImage(
                 imageUrl: image.downloadUrl!,
                 fit: BoxFit.cover,
+                placeholder: (ctx, url) => Shimmer.fromColors(
+                  baseColor: Colors.grey.shade200,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(color: Colors.grey.shade200),
+                ),
+                errorWidget: (ctx, url, err) =>
+                    Container(color: Colors.grey.shade200),
               )
             else
-              Container(color: Colors.grey.shade200),
+              Shimmer.fromColors(
+                baseColor: Colors.grey.shade200,
+                highlightColor: Colors.grey.shade100,
+                child: Container(color: Colors.grey.shade200),
+              ),
             if (image.isPending)
               Container(
                 color: Colors.black54,
@@ -403,11 +495,20 @@ class _ImageTile extends ConsumerWidget {
                 ),
               ),
             if (image.isError)
-              Container(
-                color: Colors.red.withValues(alpha:0.6),
-                child: const Center(
-                  child:
-                      Icon(Icons.error_outline, color: Colors.white, size: 24),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () => _showError(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.error_outline,
+                        color: Colors.white, size: 20),
+                  ),
                 ),
               ),
             if (image.isComplete)
@@ -415,14 +516,85 @@ class _ImageTile extends ConsumerWidget {
                 bottom: 4,
                 right: 4,
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
                     color: Colors.green,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 10),
+                  child: const Icon(Icons.check, color: Colors.white, size: 20),
                 ),
               ),
+            // Full-screen hint
+            if (image.isComplete || image.downloadUrl != null)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: GestureDetector(
+                  onTap: () => _showFullScreen(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.fullscreen,
+                        color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenImageViewer extends StatelessWidget {
+  final String url;
+
+  const _FullScreenImageViewer({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 5.0,
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.contain,
+                  placeholder: (ctx, url) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (ctx, url, err) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                    size: 48,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 12,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -473,8 +645,8 @@ class _TimelineTab extends StatelessWidget {
           if (nextStarted != null) {
             final days = nextStarted.difference(startedAt).inDays;
             durationLabel = days == 0
-                ? 'Same day'
-                : '$days day${days == 1 ? '' : 's'}';
+                ? context.l10n.sameDay
+                : context.l10n.durationDays(days);
           }
         }
 
@@ -606,7 +778,7 @@ class _TimelineTab extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'In Progress',
+                                  context.l10n.inProgress,
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -623,7 +795,7 @@ class _TimelineTab extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'Done',
+                                  context.l10n.done,
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -646,7 +818,7 @@ class _TimelineTab extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
-                                  'Started $dateLabel',
+                                  context.l10n.startedLabel(dateLabel),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 11,
                                     color: theme.colorScheme.onSurface
@@ -713,25 +885,27 @@ class _InfoTab extends StatelessWidget {
       children: [
         _InfoRow(label: 'Project Name', value: project.name),
         _InfoRow(
-          label: 'Location',
-          value: project.location.isNotEmpty ? project.location : 'Not set',
+          label: context.l10n.locationLabel,
+          value: project.location.isNotEmpty
+              ? project.location
+              : context.l10n.locationNotSet,
         ),
         _InfoRow(
-          label: 'Description',
+          label: context.l10n.description,
           value: project.description.isNotEmpty
               ? project.description
-              : 'No description',
+              : context.l10n.noDescription,
         ),
         _InfoRow(
-          label: 'Created',
+          label: context.l10n.createdLabel,
           value: DateFormat('dd MMMM yyyy').format(project.createdAt),
         ),
         _InfoRow(
-          label: 'Total Analyses',
+          label: context.l10n.totalAnalyses,
           value: '${project.totalAnalyses}',
         ),
         _InfoRow(
-          label: 'Total Defects',
+          label: context.l10n.totalDefects,
           value: '${project.totalDefects}',
         ),
       ],
@@ -756,7 +930,7 @@ class _InfoRow extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha:0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               fontWeight: FontWeight.w600,
             ),
           ),
