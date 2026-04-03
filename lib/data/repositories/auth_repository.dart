@@ -24,44 +24,6 @@ class AuthRepository {
 
   String? get currentUserId => _authService.currentUserId;
 
-  Future<UserModel> signInWithEmailPassword({
-    required String email,
-    required String password,
-  }) async {
-    final credential = await _authService.signInWithEmailPassword(
-      email: email,
-      password: password,
-    );
-    return _getOrCreateUserModel(credential.user!);
-  }
-
-  Future<UserModel> registerWithEmailPassword({
-    required String email,
-    required String password,
-    required String displayName,
-    required String role,
-  }) async {
-    final credential = await _authService.registerWithEmailPassword(
-      email: email,
-      password: password,
-      displayName: displayName,
-    );
-
-    final user = credential.user!;
-    final userModel = UserModel(
-      uid: user.uid,
-      email: user.email ?? email,
-      displayName: displayName,
-      photoUrl: user.photoURL,
-      role: role,
-      createdAt: DateTime.now(),
-    );
-
-    await _firestoreService.createUser(userModel);
-    await _updateFcmToken(userModel.uid);
-    return userModel;
-  }
-
   Future<UserModel> signInWithGoogle({String role = AppConstants.roleHouseOwner}) async {
     final credential = await _authService.signInWithGoogle();
     final user = credential.user!;
@@ -69,7 +31,7 @@ class AuthRepository {
     // Check if user already exists
     final existingUser = await _firestoreService.getUser(user.uid);
     if (existingUser != null) {
-      await _updateFcmToken(user.uid);
+      _updateFcmToken(user.uid);
       return existingUser;
     }
 
@@ -84,7 +46,44 @@ class AuthRepository {
     );
 
     await _firestoreService.createUser(userModel);
-    await _updateFcmToken(user.uid);
+    _updateFcmToken(user.uid);
+    return userModel;
+  }
+
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) codeSent,
+    required void Function(String error) verificationFailed,
+    required void Function() verificationCompleted,
+    int? forceResendingToken,
+  }) async {
+    await _authService.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      forceResendingToken: forceResendingToken,
+      verificationCompleted: (credential) async {
+        // Auto-resolved on Android — sign in and ensure Firestore doc exists.
+        final result = await _authService.signInWithPhoneCredential(credential);
+        if (result.user != null) {
+          await _getOrCreateUserModel(result.user!);
+        }
+        verificationCompleted();
+      },
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: (_) {},
+    );
+  }
+
+  Future<UserModel> signInWithOtp({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    final credential = await _authService.signInWithOtp(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    final user = credential.user!;
+    final userModel = await _getOrCreateUserModel(user);
     return userModel;
   }
 
@@ -152,14 +151,10 @@ class AuthRepository {
     }
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
-    await _authService.sendPasswordResetEmail(email);
-  }
-
   Future<UserModel> _getOrCreateUserModel(User user) async {
     final existing = await _firestoreService.getUser(user.uid);
     if (existing != null) {
-      await _updateFcmToken(user.uid);
+      _updateFcmToken(user.uid);
       return existing;
     }
 
@@ -173,18 +168,18 @@ class AuthRepository {
     );
 
     await _firestoreService.createUser(userModel);
-    await _updateFcmToken(user.uid);
+    _updateFcmToken(user.uid);
     return userModel;
   }
 
-  Future<void> _updateFcmToken(String userId) async {
-    try {
-      final token = await _fcmService.getToken();
+  // Fire-and-forget — never blocks the auth flow.
+  void _updateFcmToken(String userId) {
+    _fcmService.getToken().then((token) async {
       if (token != null) {
         await _firestoreService.updateFcmToken(userId, token);
       }
-    } catch (_) {
-      // Non-critical, ignore errors
-    }
+    }).catchError((_) {
+      // Non-critical — FCM unavailable on this device, ignore.
+    });
   }
 }

@@ -46,10 +46,10 @@ class ProjectsHomeScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(projectsStreamProvider);
-        },
-        child: projectsAsync.when(
+              onRefresh: () async {
+                ref.invalidate(projectsStreamProvider);
+              },
+              child: projectsAsync.when(
           data: (projects) {
             if (projects.isEmpty) {
               return _EmptyProjectsView(
@@ -295,3 +295,4 @@ class _ProjectsShimmer extends StatelessWidget {
     );
   }
 }
+

@@ -14,38 +14,6 @@ class AuthService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
-  Future<UserCredential> signInWithEmailPassword({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
-    }
-  }
-
-  Future<UserCredential> registerWithEmailPassword({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-      await credential.user?.updateDisplayName(displayName);
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
-    }
-  }
-
   Future<UserCredential> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn
@@ -85,14 +53,6 @@ class AuthService {
     ]);
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
-    }
-  }
-
   Future<void> updateDisplayName(String displayName) async {
     await _auth.currentUser?.updateDisplayName(displayName);
     await _auth.currentUser?.reload();
@@ -111,17 +71,47 @@ class AuthService {
     }
   }
 
-  Future<void> reauthenticateWithPassword(String password) async {
-    final user = _auth.currentUser;
-    if (user == null || user.email == null) {
-      throw Exception('No authenticated user found');
-    }
-    final credential = EmailAuthProvider.credential(
-      email: user.email!,
-      password: password,
+  // ─── Phone Auth ─────────────────────────────────────────────────────────────
+
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(PhoneAuthCredential) verificationCompleted,
+    required void Function(String) verificationFailed,
+    required void Function(String verificationId, int? resendToken) codeSent,
+    required void Function(String verificationId) codeAutoRetrievalTimeout,
+    int? forceResendingToken,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      timeout: const Duration(seconds: 60),
+      forceResendingToken: forceResendingToken,
+      verificationCompleted: verificationCompleted,
+      verificationFailed: (e) => verificationFailed(
+        _handleFirebaseAuthException(e).toString().replaceFirst('Exception: ', ''),
+      ),
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+    );
+  }
+
+  Future<UserCredential> signInWithOtp({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
     );
     try {
-      await user.reauthenticateWithCredential(credential);
+      return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _handleFirebaseAuthException(e);
+    }
+  }
+
+  Future<UserCredential> signInWithPhoneCredential(PhoneAuthCredential credential) async {
+    try {
+      return await _auth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthException(e);
     }
@@ -151,6 +141,14 @@ class AuthService {
         return Exception('Invalid credentials. Please check and try again.');
       case 'requires-recent-login':
         return Exception('Please sign in again to complete this action.');
+      case 'invalid-phone-number':
+        return Exception('Invalid phone number. Use international format (e.g. +91XXXXXXXXXX).');
+      case 'invalid-verification-code':
+        return Exception('Incorrect OTP. Please check and try again.');
+      case 'session-expired':
+        return Exception('OTP expired. Please request a new one.');
+      case 'quota-exceeded':
+        return Exception('SMS quota exceeded. Please try again later.');
       default:
         return Exception(e.message ?? 'Authentication failed. Please try again.');
     }

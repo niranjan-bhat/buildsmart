@@ -38,7 +38,13 @@ class FcmService {
 
   Future<String?> getToken() async {
     try {
-      return await _messaging.getToken();
+      return await _messaging.getToken().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          debugPrint('FCM getToken timed out — service unavailable');
+          return null;
+        },
+      );
     } catch (e) {
       debugPrint('Failed to get FCM token: $e');
       return null;

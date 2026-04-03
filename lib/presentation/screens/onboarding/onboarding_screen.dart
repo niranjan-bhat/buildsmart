@@ -77,7 +77,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final box = Hive.box(AppConstants.settingsBox);
     await box.put(AppConstants.onboardingKey, true);
     await box.put(AppConstants.userRoleKey, _selectedRole);
-    if (mounted) context.go(AppRoutes.register);
+    if (mounted) context.go(AppRoutes.login);
   }
 
   @override

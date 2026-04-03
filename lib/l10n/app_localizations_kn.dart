@@ -137,6 +137,47 @@ class AppLocalizationsKn extends AppLocalizations {
   String get fullNameValidation => 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ನಮೂದಿಸಿ';
 
   @override
+  String get continueWithPhone => 'ಫೋನ್‌ನೊಂದಿಗೆ ಮುಂದುವರಿಸಿ';
+
+  @override
+  String get phoneAuthTitle => 'ಫೋನ್ ಸೈನ್-ಇನ್';
+
+  @override
+  String get phoneAuthSubtitle => 'ನಿಮ್ಮ ನಂಬರ್‌ಗೆ ಒಂದು OTP ಕಳುಹಿಸಲಾಗುತ್ತದೆ';
+
+  @override
+  String get phoneNumber => 'ಫೋನ್ ನಂಬರ್';
+
+  @override
+  String get phoneNumberInvalid => 'ಸರಿಯಾದ ಫೋನ್ ನಂಬರ್ ನಮೂದಿಸಿ';
+
+  @override
+  String get sendOtp => 'OTP ಕಳುಹಿಸಿ';
+
+  @override
+  String get sendingOtp => 'OTP ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get enterOtpTitle => 'OTP ನಮೂದಿಸಿ';
+
+  @override
+  String get otpSentTo => 'ಕೋಡ್ ಕಳುಹಿಸಲಾಗಿದೆ';
+
+  @override
+  String get verifyOtp => 'ಪರಿಶೀಲಿಸಿ';
+
+  @override
+  String get verifyingOtp => 'ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get resendOtp => 'OTP ಮರುಕಳುಹಿಸಿ';
+
+  @override
+  String resendOtpIn(int seconds) {
+    return '$seconds ಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ ಮರುಕಳುಹಿಸಿ';
+  }
+
+  @override
   String get newProject => 'ಹೊಸ ಯೋಜನೆ';
 
   @override

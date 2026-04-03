@@ -102,25 +102,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) setState(() => _isEditingName = false);
   }
 
-  Future<void> _sendPasswordReset(String email) async {
-    try {
-      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(context.l10n.passwordResetSentTo(email))),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(context.l10n.failedSendResetEmail(e.toString()))),
-        );
-      }
-    }
-  }
 
   Future<void> _signOut() async {
     final l10n = context.l10n;
@@ -410,14 +391,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () => _showRolePicker(context, user.role),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.lock_reset_outlined),
-                  title: Text(l10n.changePassword),
-                  subtitle: Text(l10n.sendResetLink),
-                  trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () => _sendPasswordReset(user.email),
-                ),
-
                 // ── Language ──────────────────────────────────────────
                 _SectionHeader(label: l10n.language),
                 ListTile(
@@ -458,7 +431,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: Text(l10n.notifiedWhenComplete),
                   value: notificationsEnabled,
                   onChanged: _setNotifications,
-                  activeThumbColor: AppTheme.primaryColor,
+                  activeTrackColor: AppTheme.primaryColor,
+                  activeThumbColor: Colors.white,
                 ),
 
                 // ── About ─────────────────────────────────────────────

@@ -3,35 +3,38 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // Accent
-  static const Color primaryColor = Color(0xFFEA580C); // construction orange
+  // Palette
+  static const Color primaryColor   = Color(0xFF2C7A7B); // muted teal
+  static const Color secondaryColor = Color(0xFFE6F0F2); // mist blue
+  static const Color slateColor     = Color(0xFF64748B); // cool grey
 
   // Light theme neutrals
-  static const Color backgroundLight = Color(0xFFF8FAFC);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color borderLight = Color(0xFFE5E7EB);
+  static const Color backgroundLight = Color(0xFFF8FAFC); // off-white
+  static const Color surfaceLight    = Color(0xFFFFFFFF);
+  static const Color cardLight       = Color(0xFFFFFFFF);
+  static const Color borderLight     = Color(0xFFE2E8F0);
 
-  static const Color textPrimaryLight = Color(0xFF111827);
-  static const Color textSecondaryLight = Color(0xFF6B7280);
-  static const Color hintLight = Color(0xFF9CA3AF);
+  static const Color textPrimaryLight   = Color(0xFF0F172A);
+  static const Color textSecondaryLight = Color(0xFF64748B);
+  static const Color hintLight          = Color(0xFF94A3B8);
 
-  // Dark theme neutrals — inspired by minimal dark portfolio aesthetic
-  static const Color backgroundDark = Color(0xFF0D0D0D); // near-pure black
-  static const Color surfaceDark = Color(0xFF141414);    // input / sheet bg
-  static const Color cardDark = Color(0xFF1A1A1A);       // card surface
-  static const Color borderDark = Color(0xFF272727);     // subtle borders
+  // Dark theme neutrals
+  static const Color backgroundDark = Color(0xFF1E293B); // soft black
+  static const Color surfaceDark    = Color(0xFF253244);
+  static const Color cardDark       = Color(0xFF2D3F52);
+  static const Color borderDark     = Color(0xFF334155);
 
-  static const Color textPrimaryDark = Color(0xFFF5F5F5);   // near white
-  static const Color textSecondaryDark = Color(0xFF888888); // muted grey
-  static const Color hintDark = Color(0xFF555555);           // placeholder
+  static const Color textPrimaryDark   = Color(0xFFF1F5F9);
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
+  static const Color hintDark          = Color(0xFF64748B);
 
   // Semantic
   static const Color successColor = Color(0xFF16A34A);
-  static const Color errorColor = Color(0xFFDC2626);
+  static const Color errorColor   = Color(0xFFDC2626);
   static const Color warningColor = Color(0xFFD97706);
-  static const Color infoColor = Color(0xFF2563EB);
+  static const Color infoColor    = Color(0xFF0EA5E9);
 
+  // ─── Light Theme ──────────────────────────────────────────────────────────
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
@@ -41,8 +44,8 @@ class AppTheme {
       brightness: Brightness.light,
       primary: primaryColor,
       onPrimary: Colors.white,
-      secondary: primaryColor,
-      onSecondary: Colors.white,
+      secondary: secondaryColor,
+      onSecondary: primaryColor,
       error: errorColor,
       onError: Colors.white,
       surface: surfaceLight,
@@ -85,8 +88,8 @@ class AppTheme {
         shadowColor: Colors.transparent,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: const Color(0xFFE5E7EB),
-        disabledForegroundColor: const Color(0xFF9CA3AF),
+        disabledBackgroundColor: const Color(0xFFE2E8F0),
+        disabledForegroundColor: const Color(0xFF94A3B8),
         minimumSize: const Size.fromHeight(48),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -100,8 +103,8 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         elevation: 0,
-        foregroundColor: textPrimaryLight,
-        side: const BorderSide(color: borderLight, width: 1),
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor, width: 1.5),
         minimumSize: const Size.fromHeight(48),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -169,9 +172,9 @@ class AppTheme {
       ),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: surfaceLight,
-      selectedColor: const Color(0xFFFFF7ED), // orange-50
-      disabledColor: const Color(0xFFF3F4F6),
+      backgroundColor: secondaryColor,
+      selectedColor: primaryColor,
+      disabledColor: const Color(0xFFF1F5F9),
       deleteIconColor: textSecondaryLight,
       labelStyle: const TextStyle(
         fontFamily: 'Inter',
@@ -182,7 +185,7 @@ class AppTheme {
       secondaryLabelStyle: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 13,
-        color: primaryColor,
+        color: Colors.white,
         fontWeight: FontWeight.w600,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -201,20 +204,14 @@ class AppTheme {
       backgroundColor: surfaceLight,
       selectedItemColor: primaryColor,
       unselectedItemColor: textSecondaryLight,
-      selectedLabelStyle: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelStyle: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-      ),
+      selectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
       type: BottomNavigationBarType.fixed,
       elevation: 0,
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surfaceLight,
-      indicatorColor: const Color(0xFFFFF7ED), // orange-50
+      indicatorColor: secondaryColor,
       labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
         (states) => TextStyle(
           fontFamily: 'Inter',
@@ -251,27 +248,25 @@ class AppTheme {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return primaryColor;
+        if (states.contains(WidgetState.selected)) return Colors.white;
         return Colors.white;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return primaryColor.withValues(alpha: 0.35);
-        }
-        return const Color(0xFFE5E7EB);
+        if (states.contains(WidgetState.selected)) return primaryColor;
+        return const Color(0xFFE2E8F0);
       }),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: primaryColor,
-      linearTrackColor: Color(0xFFE5E7EB),
-      circularTrackColor: Color(0xFFE5E7EB),
+      linearTrackColor: secondaryColor,
+      circularTrackColor: secondaryColor,
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: backgroundDark,
       contentTextStyle: const TextStyle(
         fontFamily: 'Inter',
-        color: Colors.white,
+        color: textPrimaryDark,
         fontSize: 14,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -292,100 +287,33 @@ class AppTheme {
         color: textSecondaryLight,
       ),
     ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: primaryColor,
+      unselectedLabelColor: textSecondaryLight,
+      indicatorColor: primaryColor,
+      labelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 14),
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 14),
+    ),
     textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 57,
-        color: textPrimaryLight,
-      ),
-      displayMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 45,
-        color: textPrimaryLight,
-      ),
-      displaySmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 36,
-        color: textPrimaryLight,
-      ),
-      headlineLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 32,
-        color: textPrimaryLight,
-      ),
-      headlineMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 28,
-        color: textPrimaryLight,
-      ),
-      headlineSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 24,
-        color: textPrimaryLight,
-      ),
-      titleLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 22,
-        color: textPrimaryLight,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-        color: textPrimaryLight,
-      ),
-      titleSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 14,
-        color: textPrimaryLight,
-      ),
-      bodyLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 16,
-        color: textPrimaryLight,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 14,
-        color: textSecondaryLight,
-      ),
-      bodySmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 12,
-        color: textSecondaryLight,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-        color: textPrimaryLight,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 12,
-        color: textSecondaryLight,
-      ),
-      labelSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 11,
-        color: textSecondaryLight,
-      ),
+      displayLarge:  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 57, color: textPrimaryLight),
+      displayMedium: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 45, color: textPrimaryLight),
+      displaySmall:  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 36, color: textPrimaryLight),
+      headlineLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 32, color: textPrimaryLight),
+      headlineMedium:TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 28, color: textPrimaryLight),
+      headlineSmall: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 24, color: textPrimaryLight),
+      titleLarge:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 22, color: textPrimaryLight),
+      titleMedium:   TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 16, color: textPrimaryLight),
+      titleSmall:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 14, color: textPrimaryLight),
+      bodyLarge:     TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 16, color: textPrimaryLight),
+      bodyMedium:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 14, color: textSecondaryLight),
+      bodySmall:     TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 12, color: textSecondaryLight),
+      labelLarge:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 14, color: textPrimaryLight),
+      labelMedium:   TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 12, color: textSecondaryLight),
+      labelSmall:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 11, color: textSecondaryLight),
     ),
   );
 
+  // ─── Dark Theme ───────────────────────────────────────────────────────────
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
@@ -395,8 +323,8 @@ class AppTheme {
       brightness: Brightness.dark,
       primary: primaryColor,
       onPrimary: Colors.white,
-      secondary: primaryColor,
-      onSecondary: Colors.white,
+      secondary: secondaryColor,
+      onSecondary: primaryColor,
       error: errorColor,
       onError: Colors.white,
       surface: surfaceDark,
@@ -439,8 +367,8 @@ class AppTheme {
         shadowColor: Colors.transparent,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: Color(0xFF1A1A1A),
-        disabledForegroundColor: Color(0xFF555555),
+        disabledBackgroundColor: cardDark,
+        disabledForegroundColor: hintDark,
         minimumSize: const Size.fromHeight(48),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -454,8 +382,8 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         elevation: 0,
-        foregroundColor: textPrimaryDark,
-        side: const BorderSide(color: borderDark, width: 1),
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor, width: 1.5),
         minimumSize: const Size.fromHeight(48),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -468,7 +396,7 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFFFB923C), // orange-400 for dark bg
+        foregroundColor: const Color(0xFF4DB6AC), // teal-300 — readable on dark
         textStyle: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 14,
@@ -481,16 +409,8 @@ class AppTheme {
       fillColor: surfaceDark,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      hintStyle: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 14,
-        color: hintDark,
-      ),
-      labelStyle: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 14,
-        color: textSecondaryDark,
-      ),
+      hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 14, color: hintDark),
+      labelStyle: const TextStyle(fontFamily: 'Inter', fontSize: 14, color: textSecondaryDark),
       floatingLabelStyle: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 14,
@@ -524,8 +444,8 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: surfaceDark,
-      selectedColor: const Color(0xFF431407), // orange-950
-      disabledColor: const Color(0xFF1A1A1A),
+      selectedColor: primaryColor,
+      disabledColor: cardDark,
       deleteIconColor: textSecondaryDark,
       labelStyle: const TextStyle(
         fontFamily: 'Inter',
@@ -553,22 +473,16 @@ class AppTheme {
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: surfaceDark,
-      selectedItemColor: Colors.white,
+      selectedItemColor: primaryColor,
       unselectedItemColor: textSecondaryDark,
-      selectedLabelStyle: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelStyle: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-      ),
+      selectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
       type: BottomNavigationBarType.fixed,
       elevation: 0,
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surfaceDark,
-      indicatorColor: const Color(0xFF431407), // orange-950
+      indicatorColor: Color(0xFF1A3A3B), // dark teal tint
       labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
         (states) => TextStyle(
           fontFamily: 'Inter',
@@ -584,7 +498,7 @@ class AppTheme {
       iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>(
         (states) => IconThemeData(
           color: states.contains(WidgetState.selected)
-              ? Colors.white
+              ? primaryColor
               : textSecondaryDark,
         ),
       ),
@@ -605,27 +519,25 @@ class AppTheme {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return primaryColor;
+        if (states.contains(WidgetState.selected)) return Colors.white;
         return Colors.white;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return primaryColor.withValues(alpha: 0.35);
-        }
-        return const Color(0xFF2A2A2A);
+        if (states.contains(WidgetState.selected)) return primaryColor;
+        return borderDark;
       }),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: primaryColor,
-      linearTrackColor: Color(0xFF2A2A2A),
-      circularTrackColor: Color(0xFF2A2A2A),
+      linearTrackColor: borderDark,
+      circularTrackColor: borderDark,
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF272727),
+      backgroundColor: cardDark,
       contentTextStyle: const TextStyle(
         fontFamily: 'Inter',
-        color: Color(0xFFF5F5F5),
+        color: textPrimaryDark,
         fontSize: 14,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -646,97 +558,29 @@ class AppTheme {
         color: textSecondaryDark,
       ),
     ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: primaryColor,
+      unselectedLabelColor: textSecondaryDark,
+      indicatorColor: primaryColor,
+      labelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 14),
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 14),
+    ),
     textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 57,
-        color: textPrimaryDark,
-      ),
-      displayMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 45,
-        color: textPrimaryDark,
-      ),
-      displaySmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 36,
-        color: textPrimaryDark,
-      ),
-      headlineLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-        fontSize: 32,
-        color: textPrimaryDark,
-      ),
-      headlineMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 28,
-        color: textPrimaryDark,
-      ),
-      headlineSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 24,
-        color: textPrimaryDark,
-      ),
-      titleLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 22,
-        color: textPrimaryDark,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-        color: textPrimaryDark,
-      ),
-      titleSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 14,
-        color: textPrimaryDark,
-      ),
-      bodyLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 16,
-        color: textPrimaryDark,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 14,
-        color: textSecondaryDark,
-      ),
-      bodySmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w400,
-        fontSize: 12,
-        color: textSecondaryDark,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-        color: textPrimaryDark,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 12,
-        color: textSecondaryDark,
-      ),
-      labelSmall: TextStyle(
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-        fontSize: 11,
-        color: textSecondaryDark,
-      ),
+      displayLarge:  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 57, color: textPrimaryDark),
+      displayMedium: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 45, color: textPrimaryDark),
+      displaySmall:  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 36, color: textPrimaryDark),
+      headlineLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 32, color: textPrimaryDark),
+      headlineMedium:TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 28, color: textPrimaryDark),
+      headlineSmall: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 24, color: textPrimaryDark),
+      titleLarge:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 22, color: textPrimaryDark),
+      titleMedium:   TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 16, color: textPrimaryDark),
+      titleSmall:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 14, color: textPrimaryDark),
+      bodyLarge:     TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 16, color: textPrimaryDark),
+      bodyMedium:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 14, color: textSecondaryDark),
+      bodySmall:     TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400, fontSize: 12, color: textSecondaryDark),
+      labelLarge:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 14, color: textPrimaryDark),
+      labelMedium:   TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 12, color: textSecondaryDark),
+      labelSmall:    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, fontSize: 11, color: textSecondaryDark),
     ),
   );
 }

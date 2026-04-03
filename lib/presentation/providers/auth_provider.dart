@@ -74,48 +74,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier(this._repository) : super(const AuthState());
 
-  Future<bool> signInWithEmailPassword({
-    required String email,
-    required String password,
-  }) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final user = await _repository.signInWithEmailPassword(
-        email: email,
-        password: password,
-      );
-      state = state.copyWith(isLoading: false, user: user);
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-          isLoading: false, error: e.toString().replaceFirst('Exception: ', ''));
-      return false;
-    }
-  }
-
-  Future<bool> register({
-    required String email,
-    required String password,
-    required String displayName,
-    required String role,
-  }) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final user = await _repository.registerWithEmailPassword(
-        email: email,
-        password: password,
-        displayName: displayName,
-        role: role,
-      );
-      state = state.copyWith(isLoading: false, user: user);
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-          isLoading: false, error: e.toString().replaceFirst('Exception: ', ''));
-      return false;
-    }
-  }
-
   Future<bool> signInWithGoogle({String role = 'House Owner'}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -157,11 +115,48 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> sendPasswordResetEmail(String email) async {
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) codeSent,
+    required void Function(String error) verificationFailed,
+    required void Function() verificationCompleted,
+    int? forceResendingToken,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _repository.sendPasswordResetEmail(email);
-      state = state.copyWith(isLoading: false);
+      await _repository.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        forceResendingToken: forceResendingToken,
+        codeSent: (verificationId, resendToken) {
+          state = state.copyWith(isLoading: false);
+          codeSent(verificationId, resendToken);
+        },
+        verificationFailed: (error) {
+          state = state.copyWith(isLoading: false, error: error);
+          verificationFailed(error);
+        },
+        verificationCompleted: () {
+          state = state.copyWith(isLoading: false);
+          verificationCompleted();
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+          isLoading: false, error: e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<bool> signInWithOtp({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final user = await _repository.signInWithOtp(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+      state = state.copyWith(isLoading: false, user: user);
       return true;
     } catch (e) {
       state = state.copyWith(

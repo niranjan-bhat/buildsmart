@@ -137,6 +137,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullNameValidation => 'Enter your full name';
 
   @override
+  String get continueWithPhone => 'Continue with Phone';
+
+  @override
+  String get phoneAuthTitle => 'Phone Sign-In';
+
+  @override
+  String get phoneAuthSubtitle => 'We\'ll send a one-time code to your number';
+
+  @override
+  String get phoneNumber => 'Phone number';
+
+  @override
+  String get phoneNumberInvalid => 'Enter a valid phone number';
+
+  @override
+  String get sendOtp => 'Send OTP';
+
+  @override
+  String get sendingOtp => 'Sending OTP…';
+
+  @override
+  String get enterOtpTitle => 'Enter OTP';
+
+  @override
+  String get otpSentTo => 'Code sent to';
+
+  @override
+  String get verifyOtp => 'Verify';
+
+  @override
+  String get verifyingOtp => 'Verifying…';
+
+  @override
+  String get resendOtp => 'Resend OTP';
+
+  @override
+  String resendOtpIn(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
   String get newProject => 'New Project';
 
   @override

@@ -15,14 +15,16 @@ class FirestoreService {
     await _db
         .collection(AppConstants.usersCollection)
         .doc(user.uid)
-        .set(user.toMap(), SetOptions(merge: true));
+        .set(user.toMap(), SetOptions(merge: true))
+        .timeout(const Duration(seconds: 10));
   }
 
   Future<UserModel?> getUser(String userId) async {
     final doc = await _db
         .collection(AppConstants.usersCollection)
         .doc(userId)
-        .get();
+        .get()
+        .timeout(const Duration(seconds: 10));
     if (!doc.exists) return null;
     return UserModel.fromFirestore(doc);
   }

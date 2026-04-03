@@ -137,6 +137,47 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fullNameValidation => 'अपना पूरा नाम दर्ज करें';
 
   @override
+  String get continueWithPhone => 'फ़ोन से जारी रखें';
+
+  @override
+  String get phoneAuthTitle => 'फ़ोन से साइन इन';
+
+  @override
+  String get phoneAuthSubtitle => 'हम आपके नंबर पर एक OTP भेजेंगे';
+
+  @override
+  String get phoneNumber => 'फ़ोन नंबर';
+
+  @override
+  String get phoneNumberInvalid => 'सही फ़ोन नंबर दर्ज करें';
+
+  @override
+  String get sendOtp => 'OTP भेजें';
+
+  @override
+  String get sendingOtp => 'OTP भेजा जा रहा है…';
+
+  @override
+  String get enterOtpTitle => 'OTP दर्ज करें';
+
+  @override
+  String get otpSentTo => 'कोड भेजा गया';
+
+  @override
+  String get verifyOtp => 'सत्यापित करें';
+
+  @override
+  String get verifyingOtp => 'सत्यापित हो रहा है…';
+
+  @override
+  String get resendOtp => 'OTP दोबारा भेजें';
+
+  @override
+  String resendOtpIn(int seconds) {
+    return '$seconds सेकंड में पुनः भेजें';
+  }
+
+  @override
   String get newProject => 'नया प्रोजेक्ट';
 
   @override

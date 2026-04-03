@@ -346,6 +346,84 @@ abstract class AppLocalizations {
   /// **'Enter your full name'**
   String get fullNameValidation;
 
+  /// No description provided for @continueWithPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Phone'**
+  String get continueWithPhone;
+
+  /// No description provided for @phoneAuthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Sign-In'**
+  String get phoneAuthTitle;
+
+  /// No description provided for @phoneAuthSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll send a one-time code to your number'**
+  String get phoneAuthSubtitle;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneNumber;
+
+  /// No description provided for @phoneNumberInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get phoneNumberInvalid;
+
+  /// No description provided for @sendOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send OTP'**
+  String get sendOtp;
+
+  /// No description provided for @sendingOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending OTP…'**
+  String get sendingOtp;
+
+  /// No description provided for @enterOtpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter OTP'**
+  String get enterOtpTitle;
+
+  /// No description provided for @otpSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent to'**
+  String get otpSentTo;
+
+  /// No description provided for @verifyOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get verifyOtp;
+
+  /// No description provided for @verifyingOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get verifyingOtp;
+
+  /// No description provided for @resendOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP'**
+  String get resendOtp;
+
+  /// No description provided for @resendOtpIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String resendOtpIn(int seconds);
+
   /// No description provided for @newProject.
   ///
   /// In en, this message translates to:

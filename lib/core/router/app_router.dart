@@ -7,7 +7,7 @@ import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
 import '../../presentation/screens/onboarding/onboarding_screen.dart';
 import '../../presentation/screens/auth/login_screen.dart';
-import '../../presentation/screens/auth/register_screen.dart';
+import '../../presentation/screens/auth/phone_auth_screen.dart';
 import '../../presentation/screens/projects/projects_home_screen.dart';
 import '../../presentation/screens/projects/project_detail_screen.dart';
 import '../../presentation/screens/projects/create_project_screen.dart';
@@ -22,7 +22,6 @@ class AppRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const login = '/login';
-  static const register = '/register';
   static const projects = '/projects';
   static const projectDetail = '/projects/:projectId';
   static const createProject = '/projects/create';
@@ -30,26 +29,31 @@ class AppRoutes {
   static const analysisResult = '/projects/:projectId/analysis/:imageId';
   static const analysisHistory = '/projects/:projectId/history';
   static const checklist = '/projects/:projectId/checklist';
+  static const phoneAuth = '/phone-auth';
   static const settings = '/settings';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // RouterNotifier bridges Riverpod auth state → GoRouter refreshListenable.
+  // The router is created ONCE; only the redirect logic re-runs on auth changes.
+  final notifier = _RouterNotifier(ref);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
       final isAuthenticated = authState.value != null;
       final isLoading = authState.isLoading;
       final isSplash = state.matchedLocation == AppRoutes.splash;
       final isOnboarding = state.matchedLocation == AppRoutes.onboarding;
       final isLogin = state.matchedLocation == AppRoutes.login;
-      final isRegister = state.matchedLocation == AppRoutes.register;
+      final isPhoneAuth = state.matchedLocation == AppRoutes.phoneAuth;
 
       if (isLoading) return isSplash ? null : AppRoutes.splash;
 
-      final onboardingDone =
-          Hive.box(AppConstants.settingsBox).get(AppConstants.onboardingKey, defaultValue: false) as bool;
+      final onboardingDone = Hive.box(AppConstants.settingsBox)
+          .get(AppConstants.onboardingKey, defaultValue: false) as bool;
 
       if (isSplash) {
         if (!isAuthenticated) {
@@ -59,11 +63,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!isAuthenticated) {
-        if (isLogin || isRegister || isOnboarding) return null;
+        if (isLogin || isOnboarding || isPhoneAuth) return null;
         return AppRoutes.login;
       }
 
-      if (isAuthenticated && (isLogin || isRegister || isOnboarding)) {
+      if (isAuthenticated &&
+          (isLogin || isOnboarding || isPhoneAuth)) {
         return AppRoutes.projects;
       }
 
@@ -83,8 +88,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: AppRoutes.register,
-        builder: (ctx, state) => const RegisterScreen(),
+        path: AppRoutes.phoneAuth,
+        builder: (ctx, state) => const PhoneAuthScreen(),
       ),
       GoRoute(
         path: AppRoutes.projects,
@@ -159,3 +164,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+/// Bridges Riverpod [authStateProvider] changes to GoRouter's refreshListenable.
+/// Created once alongside the router — notifies GoRouter to re-run its redirect
+/// without recreating the router instance.
+class _RouterNotifier extends ChangeNotifier {
+  _RouterNotifier(Ref ref) {
+    ref.listen(authStateProvider, (_, __) => notifyListeners());
+  }
+}
