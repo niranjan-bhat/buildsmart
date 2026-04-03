@@ -4,33 +4,36 @@ AI-powered construction site analysis app for Android. Takes photos of construct
 
 **Platform:** Android (Flutter)
 **AI:** Google Gemini 1.5 Flash via Cloud Function
-**Backend:** Firebase (Auth + Firestore + Storage + Functions + FCM)
+**Backend:** Firebase (Auth + Firestore + Storage + Functions + FCM + App Check)
 
 ---
 
-## Current State (as of March 2026)
+## Current State (as of April 2026)
 
-M3 (Analysis UI) and M4 (Checklist Module) are complete. The app is functional end-to-end — users can create projects, capture images, receive AI analysis, manage defects, and work through stage checklists.
+M3 (Analysis UI) and M4 (Checklist Module) are complete. The app is functional end-to-end — users can sign in, create projects, capture images, receive AI analysis, manage defects, and work through stage checklists.
 
 **What exists:**
-- All 11 screens (splash, onboarding, auth, projects, camera, analysis, checklist, settings)
+- All screens (splash, onboarding, auth, projects, camera, analysis, checklist, settings)
+- Authentication: Google OAuth + Phone OTP (Firebase Auth) — no email/password
+- Phone OTP screen: country code picker, 6-box OTP input, 60s resend timer, Android SMS auto-retrieval
 - Full data layer: models, repositories, Riverpod providers
 - Cloud Function (`analyzeConstructionImage`) — Firestore trigger → Gemini 1.5 Flash → writes result back
 - Firestore + Storage security rules
-- FCM service stub
-- Material 3 theme with Inter font, light + dark mode
+- FCM service with 8s timeout and fire-and-forget (non-blocking auth flow)
+- Material 3 theme — teal palette (#2C7A7B), light + dark mode
 - Hive local cache for checklist (Firestore-synced, offline-capable)
 - Multi-image upload — up to 5 images analysed in parallel, each with its own result
 - Defect rectification — mark individual defects as resolved; persisted to Firestore
-- Shimmer placeholders on project cards and image grid while content loads
-- Reverse geocoding on location detect — shows city/state/country instead of raw coordinates
+- Shimmer placeholders on project cards and image grid
+- Reverse geocoding — shows city/state/country instead of raw coordinates
+- Localisation — English, Hindi, Kannada
+- Firebase App Check — debug provider in dev, Play Integrity in release builds
 
 **What is NOT done yet:**
 - `lib/firebase_options.dart` is gitignored — must regenerate locally (see setup)
 - FCM push notifications not fully integrated
 - No tests written yet (target ≥ 70% coverage)
 - CI/CD (GitHub Actions + Fastlane) not configured
-- Firebase App Check (Play Integrity) not enabled
 - Play Store listing / production release
 
 ---
@@ -80,8 +83,8 @@ buildsmart/
 │   ├── firebase_options.dart          # gitignored — regenerate with flutterfire configure
 │   ├── core/
 │   │   ├── constants/                 # app constants, construction stage definitions
-│   │   ├── router/                    # go_router config
-│   │   └── theme/                     # Material 3 light/dark theme
+│   │   ├── router/                    # go_router config with _RouterNotifier bridge
+│   │   └── theme/                     # Material 3 light/dark theme (teal palette)
 │   ├── data/
 │   │   ├── models/                    # Dart data classes (user, project, image, analysis, checklist, defect)
 │   │   ├── repositories/              # Firebase implementations (auth, project, image, checklist)
@@ -89,6 +92,7 @@ buildsmart/
 │   └── presentation/
 │       ├── providers/                 # Riverpod providers (auth, project, image, checklist)
 │       ├── screens/                   # One folder per feature
+│       │   └── auth/                  # login_screen.dart, phone_auth_screen.dart
 │       └── widgets/                   # Shared widgets (project card, defect card, stage badge, etc.)
 ├── functions/
 │   └── index.js                       # Cloud Function: Firestore trigger → Gemini → result
@@ -98,6 +102,27 @@ buildsmart/
 ├── firestore.rules
 ├── storage.rules
 └── firebase.json
+```
+
+---
+
+## Authentication
+
+Sign-in methods: **Google OAuth** and **Phone OTP** only.
+
+| Flow | How it works |
+|---|---|
+| Google | `google_sign_in` → Firebase credential → Firestore user doc created on first sign-in |
+| Phone OTP | `FirebaseAuth.verifyPhoneNumber` → 6-digit SMS code → `PhoneAuthProvider.credential` → sign in. Android auto-retrieves the SMS via Play Services. |
+
+Firebase Phone Auth requires SHA-1 and SHA-256 fingerprints registered in the Firebase Console under Project Settings → Your apps → Android app.
+
+Get debug fingerprints:
+```bash
+# Using Android Studio's keytool (adjust path if needed)
+"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v \
+  -keystore %USERPROFILE%\.android\debug.keystore \
+  -alias androiddebugkey -storepass android -keypass android
 ```
 
 ---
@@ -146,6 +171,15 @@ firebase functions:log
 **Project ID:** `buildsmart-35f5b`
 **Services in use:** Auth, Firestore, Storage, Functions, Messaging, Analytics, App Check
 
+### Enable Phone Auth
+
+Firebase Console → Authentication → Sign-in methods → Phone → Enable.
+
+### Enable App Check
+
+Firebase Console → App Check → Android app → Play Integrity → Save.
+Add SHA-1 and SHA-256 fingerprints under Project Settings → Your apps.
+
 ### Deploy rules
 
 ```bash
@@ -184,7 +218,7 @@ appContent/bestPractices              read-only, admin-managed
 | `google_sign_in` | Google OAuth |
 | `image_picker` + `flutter_image_compress` | Camera/gallery + compression |
 | `hive` + `hive_flutter` | Local cache for checklist |
-| `geolocator` + `geocoding` | GPS coordinates + reverse geocoding to readable address |
+| `geolocator` + `geocoding` | GPS coordinates + reverse geocoding |
 | `crypto` | Image hashing (dedup before Gemini call) |
 | `pdf` + `printing` | PDF export of analysis results |
 
@@ -214,7 +248,7 @@ flutter analyze
 ## Environment Notes
 
 - Billing alert set at $50/month in Google Cloud Console
+- Firebase Blaze plan required for Cloud Function outbound network and Phone Auth beyond 10k SMS/month
 - Gemini Flash is the default model (not Pro) — ~$0.0003 per analysis
 - Rate limit in Cloud Function: 50 analyses/user/day
 - Duplicate image uploads are deduped by image hash (skips Gemini call)
-- Firebase Blaze plan required for Cloud Function outbound network (free quotas still apply)

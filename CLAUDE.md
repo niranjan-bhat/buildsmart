@@ -130,10 +130,12 @@ Site Preparation, Foundation, Plinth, Superstructure / Framing, Brickwork / Maso
 ## Key Functional Requirements
 
 ### Authentication
-- Email/password and Google OAuth via Firebase Auth
-- Password: min 8 characters + 1 digit (client-side enforced)
-- Password reset via Firebase Auth built-in email flow
-- User profile in Firestore `users/{userId}`
+- Google OAuth and Phone OTP via Firebase Auth — no email/password
+- Phone OTP: `FirebaseAuth.verifyPhoneNumber` → 6-digit SMS → `PhoneAuthProvider.credential`
+- Android SMS auto-retrieval via Play Services (instantaneous on supported devices)
+- User profile in Firestore `users/{userId}` — auto-created on first sign-in, recovered by `_userStream` if the write fails
+- FCM token update is fire-and-forget (8s timeout) — never blocks the auth flow
+- App Check: `AndroidProvider.debug` in dev, `AndroidProvider.playIntegrity` in release (`kReleaseMode`)
 
 ### Projects
 - CRUD in Firestore, ordered by `updatedAt` descending
@@ -166,7 +168,7 @@ Site Preparation, Foundation, Plinth, Superstructure / Framing, Brickwork / Maso
 
 ## Cost Model
 
-- **Firebase:** Free tier (Spark quotas) covers early-stage usage. Blaze plan required for Cloud Function outbound network calls (same free quotas, charged only on overage).
+- **Firebase:** Blaze plan active. Phone Auth free up to 10k SMS/month; charged per SMS beyond that (~₹0.05–0.10/SMS for Indian numbers).
 - **Gemini 1.5 Flash:** ~$0.0003 per analysis (~$0.075/1M input tokens, ~$0.30/1M output tokens)
 - **Billing alert:** Set at $50/month in Google Cloud Console
 
@@ -182,9 +184,9 @@ Site Preparation, Foundation, Plinth, Superstructure / Framing, Brickwork / Maso
 
 | Screen | Notes |
 |---|---|
-| Splash / Onboarding | 3-screen tour, Sign Up / Log In |
-| Log In | Email + Google OAuth, Forgot Password |
-| Register | Name, email, password, role selector |
+| Splash / Onboarding | 3-screen tour, role selector, then navigates to Login |
+| Log In | Google OAuth + Phone OTP buttons only — no email/password |
+| Phone OTP | Country code + phone number → 6-box OTP input, 60s resend timer |
 | Projects Home | Firestore-backed cards, FAB to create project |
 | Project Detail | Recent images, stage progress ring, action buttons |
 | Camera / Gallery Picker | image_picker sheet |
